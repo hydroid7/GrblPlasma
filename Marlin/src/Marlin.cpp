@@ -666,7 +666,9 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
   Variables used for automatic position reporting during motion
  **/
  int32_t last_position[3];
+ float last_units;
  int32_t actual_position[3];
+ float actual_units;
  const float scale[] = DEFAULT_AXIS_STEPS_PER_UNIT;
  unsigned long report_timestamp = 0;
 
@@ -688,14 +690,15 @@ void idle(
     actual_position[0] = stepper.position(X_AXIS);
     actual_position[1] = stepper.position(Y_AXIS);
     actual_position[2] = stepper.position(Z_AXIS);
-    if (actual_position[0] != last_position[0] || actual_position[1] != last_position[1] || actual_position[2] != last_position[2])
+    actual_units = (float)parser.linear_value_to_mm(1);
+    if (actual_position[0] != last_position[0] || actual_position[1] != last_position[1] || actual_position[2] != last_position[2] || actual_units != last_units)
     {
       SERIAL_ECHOPGM("X: ");
-      SERIAL_ECHO((float)(actual_position[0] / scale[0]) / parser.linear_value_to_mm(1));
+      SERIAL_ECHO((float)(actual_position[0] / scale[0]) / actual_units);
       SERIAL_ECHOPGM(" Y: ");
-      SERIAL_ECHO((float)(actual_position[1] / scale[1]) / parser.linear_value_to_mm(1));
+      SERIAL_ECHO((float)(actual_position[1] / scale[1]) / actual_units);
       SERIAL_ECHOPGM(" Z: ");
-      SERIAL_ECHO((float)(actual_position[2] / scale[2]) / parser.linear_value_to_mm(1));
+      SERIAL_ECHO((float)(actual_position[2] / scale[2]) / actual_units);
       SERIAL_ECHOPGM(" UNITS: ");
       if (parser.linear_value_to_mm(1) == 1.0f)
       {
@@ -710,6 +713,7 @@ void idle(
       last_position[0] = actual_position[0];
       last_position[1] = actual_position[1];
       last_position[2] = actual_position[2];
+      last_units = actual_units;
     }
 
 
