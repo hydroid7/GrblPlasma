@@ -34,6 +34,28 @@ void GcodeSuite::M20() {
   SERIAL_ECHOLNPGM(MSG_BEGIN_FILE_LIST);
   card.ls();
   SERIAL_ECHOLNPGM(MSG_END_FILE_LIST);
+
+  /*if (!SD.begin(BUILTIN_SDCARD)) {
+    Serial.println("initialization failed or already initialized!");
+  }
+  else
+  {
+    Serial.println("initialization ok!");
+  }
+  File dir = SD.open("/");
+  while(true) {
+
+     File entry =  dir.openNextFile();
+     if (! entry) {
+       // no more files
+       //Serial.println("**nomorefiles**");
+       break;
+     }
+     Serial.print(entry.name());
+     Serial.print("\t\t");
+     Serial.println(entry.size(), DEC);
+     entry.close();
+   }*/
 }
 
 #endif // SDSUPPORT

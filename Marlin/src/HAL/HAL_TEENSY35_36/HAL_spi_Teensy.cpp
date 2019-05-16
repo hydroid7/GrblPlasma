@@ -1,4 +1,4 @@
-#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 
 #include "HAL.h"
 #include <SPI.h>
@@ -8,104 +8,170 @@
 
 static SPISettings spiConfig;
 
+#define USE_TEENSY3_SPI
+
+// Teensy 3.0 functions  (copied from sdfatlib20130629)
+#include <kinetis.h>
+// Limit initial fifo to three entries to avoid fifo overrun
+#define SPI_INITIAL_FIFO_DEPTH 3
+// define some symbols that are not in mk20dx128.h
+#ifndef SPI_SR_RXCTR
+#define SPI_SR_RXCTR 0XF0
+#endif  // SPI_SR_RXCTR
+#ifndef SPI_PUSHR_CONT
+#define SPI_PUSHR_CONT 0X80000000
+#endif   // SPI_PUSHR_CONT
+#ifndef SPI_PUSHR_CTAS
+#define SPI_PUSHR_CTAS(n) (((n) & 7) << 28)
+#endif  // SPI_PUSHR_CTAS
 // Standard SPI functions
 /** Initialize SPI bus */
-void spiBegin(void) {
-  #if !PIN_EXISTS(SS)
-    #error SS_PIN not defined!
-  #endif
-  SET_OUTPUT(SS_PIN);
-  WRITE(SS_PIN, HIGH);
-  SET_OUTPUT(SCK_PIN);
-  SET_INPUT(MISO_PIN);
-  SET_OUTPUT(MOSI_PIN);
 
-  //#if DISABLED(SOFTWARE_SPI)
-  #if 0
-    // set SS high - may be chip select for another SPI device
-    #if SET_SPI_SS_HIGH
-      WRITE(SS_PIN, HIGH);
-    #endif  // SET_SPI_SS_HIGH
-    // set a default rate
-    spiInit(SPI_HALF_SPEED); // 1
-  #endif  // SOFTWARE_SPI
+void spiBegin() {
+  SIM_SCGC6 |= SIM_SCGC6_SPI0;
 }
 
-/** Configure SPI for specified SPI speed */
 void spiInit(uint8_t spiRate) {
-  // Use datarates Marlin uses
-  uint32_t clock;
   switch (spiRate) {
-  case SPI_FULL_SPEED:    clock = 10000000; break;
-  case SPI_HALF_SPEED:    clock =  5000000; break;
-  case SPI_QUARTER_SPEED: clock =  2500000; break;
-  case SPI_EIGHTH_SPEED:  clock =  1250000; break;
-  case SPI_SPEED_5:       clock =   625000; break;
-  case SPI_SPEED_6:       clock =   312500; break;
-  default:
-    clock = 4000000; // Default from the SPI libarary
+    // the top 2 speeds are set to 24 MHz, for the SD library defaults
+    case 0:  spiConfig = SPISettings(24000000, MSBFIRST, SPI_MODE0); break;
+    case 1:  spiConfig = SPISettings(24000000, MSBFIRST, SPI_MODE0); break;
+    case 2:  spiConfig = SPISettings(8000000, MSBFIRST, SPI_MODE0); break;
+    case 3:  spiConfig = SPISettings(4000000, MSBFIRST, SPI_MODE0); break;
+    case 4:  spiConfig = SPISettings(3000000, MSBFIRST, SPI_MODE0); break;
+    case 5:  spiConfig = SPISettings(2000000, MSBFIRST, SPI_MODE0); break;
+    default: spiConfig = SPISettings(400000, MSBFIRST, SPI_MODE0);
   }
-  spiConfig = SPISettings(clock, MSBFIRST, SPI_MODE0);
   SPI.begin();
 }
 
-//------------------------------------------------------------------------------
 /** SPI receive a byte */
-uint8_t spiRec(void) {
-  SPI.beginTransaction(spiConfig);
-  uint8_t returnByte = SPI.transfer(0xFF);
-  SPI.endTransaction();
-  return returnByte;
-//  SPDR = 0xFF;
-//  while (!TEST(SPSR, SPIF)) { /* Intentionally left empty */ }
-//  return SPDR;
+uint8_t spiRec() {
+  SPI0_MCR |= SPI_MCR_CLR_RXF;
+  SPI0_SR = SPI_SR_TCF;
+  SPI0_PUSHR = 0xFF;
+  while (!(SPI0_SR & SPI_SR_TCF)) {}
+  return SPI0_POPR;
 }
-//------------------------------------------------------------------------------
-/** SPI read data  */
-void spiRead(uint8_t* buf, uint16_t nbyte) {
-  SPI.beginTransaction(spiConfig);
-  SPI.transfer(buf, nbyte);
-  SPI.endTransaction();
-//if (nbyte-- == 0) return;
-//  SPDR = 0xFF;
-//for (uint16_t i = 0; i < nbyte; i++) {
-//  while (!TEST(SPSR, SPIF)) { /* Intentionally left empty */ }
-//  buf[i] = SPDR;
-//  SPDR = 0xFF;
-//}
-//while (!TEST(SPSR, SPIF)) { /* Intentionally left empty */ }
-//buf[nbyte] = SPDR;
+/** SPI receive multiple bytes */
+uint8_t spiRec(uint8_t* buf, size_t len) {
+  // clear any data in RX FIFO
+  SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
+  // use 16 bit frame to avoid TD delay between frames
+  // get one byte if len is odd
+  if (len & 1) {
+    *buf++ = spiRec();
+    len--;
+  }
+  // initial number of words to push into TX FIFO
+  int nf = len/2 < SPI_INITIAL_FIFO_DEPTH ? len/2 : SPI_INITIAL_FIFO_DEPTH;
+  for (int i = 0; i < nf; i++) {
+    SPI0_PUSHR = SPI_PUSHR_CONT | SPI_PUSHR_CTAS(1) | 0XFFFF;
+  }
+  uint8_t* limit = buf + len - 2*nf;
+  while (buf < limit) {
+    while (!(SPI0_SR & SPI_SR_RXCTR)) {}
+    SPI0_PUSHR = SPI_PUSHR_CONT | SPI_PUSHR_CTAS(1) | 0XFFFF;
+    uint16_t w = SPI0_POPR;
+    *buf++ = w >> 8;
+    *buf++ = w & 0XFF;
+  }
+  // limit for rest of RX data
+  limit += 2*nf;
+  while (buf < limit) {
+    while (!(SPI0_SR & SPI_SR_RXCTR)) {}
+    uint16_t w = SPI0_POPR;
+    *buf++ = w >> 8;
+    *buf++ = w & 0XFF;
+  }
+  return 0;
 }
-//------------------------------------------------------------------------------
+void spiRecIgnore(size_t len) {
+  // clear any data in RX FIFO
+  SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
+  // use 16 bit frame to avoid TD delay between frames
+  // get one byte if len is odd
+  if (len & 1) {
+    spiRec();
+    len--;
+  }
+  // initial number of words to push into TX FIFO
+  int nf = len/2 < SPI_INITIAL_FIFO_DEPTH ? len/2 : SPI_INITIAL_FIFO_DEPTH;
+  for (int i = 0; i < nf; i++) {
+    SPI0_PUSHR = SPI_PUSHR_CONT | SPI_PUSHR_CTAS(1) | 0XFFFF;
+    len -= 2;
+  }
+  //uint8_t* limit = buf + len - 2*nf;
+  //while (buf < limit) {
+  while (len > 0) {
+    while (!(SPI0_SR & SPI_SR_RXCTR)) {}
+    SPI0_PUSHR = SPI_PUSHR_CONT | SPI_PUSHR_CTAS(1) | 0XFFFF;
+    SPI0_POPR;
+    len -= 2;
+  }
+  // limit for rest of RX data
+  while (nf > 0) {
+    while (!(SPI0_SR & SPI_SR_RXCTR)) {}
+    SPI0_POPR;
+    nf--;
+  }
+}
 /** SPI send a byte */
 void spiSend(uint8_t b) {
-  SPI.beginTransaction(spiConfig);
-  SPI.transfer(b);
-  SPI.endTransaction();
-//  SPDR = b;
-//  while (!TEST(SPSR, SPIF)) { /* Intentionally left empty */ }
+  SPI0_MCR |= SPI_MCR_CLR_RXF;
+  SPI0_SR = SPI_SR_TCF;
+  SPI0_PUSHR = b;
+  while (!(SPI0_SR & SPI_SR_TCF)) {}
 }
-//------------------------------------------------------------------------------
-/** SPI send block  */
-void spiSendBlock(uint8_t token, const uint8_t* buf) {
-  SPI.beginTransaction(spiConfig);
-  SPDR = token;
-  for (uint16_t i = 0; i < 512; i += 2) {
-    while (!TEST(SPSR, SPIF)) { /* nada */ };
-    SPDR = buf[i];
-    while (!TEST(SPSR, SPIF)) { /* nada */ };
-    SPDR = buf[i + 1];
+/** SPI send multiple bytes */
+
+#elif defined(__IMXRT1052__)  || defined(__IMXRT1062__)
+ #define USE_TEENSY4_SPI
+
+ void spiInit(uint8_t spiRate) {
+  switch (spiRate) {
+    // the top 2 speeds are set to 24 MHz, for the SD library defaults
+    case 0:  spiConfig = SPISettings(25200000, MSBFIRST, SPI_MODE0); break;
+    case 1:  spiConfig = SPISettings(24000000, MSBFIRST, SPI_MODE0); break;
+    case 2:  spiConfig = SPISettings(8000000, MSBFIRST, SPI_MODE0); break;
+    case 3:  spiConfig = SPISettings(4000000, MSBFIRST, SPI_MODE0); break;
+    case 4:  spiConfig = SPISettings(3000000, MSBFIRST, SPI_MODE0); break;
+    case 5:  spiConfig = SPISettings(2000000, MSBFIRST, SPI_MODE0); break;
+    default: spiConfig = SPISettings(400000, MSBFIRST, SPI_MODE0);
   }
-  while (!TEST(SPSR, SPIF)) { /* nada */ };
-  SPI.endTransaction();
+  SPI.begin();
 }
 
+ void spiSend(uint8_t b) {
+	SPI.transfer(b);
+ }
 
-/** Begin SPI transaction, set clock, bit order, data mode */
-void spiBeginTransaction(uint32_t spiClock, uint8_t bitOrder, uint8_t dataMode) {
-  spiConfig = SPISettings(spiClock, bitOrder, dataMode);
+ uint8_t spiRec(void) {
+	return SPI.transfer(0xff);
+ }
 
-  SPI.beginTransaction(spiConfig);
+ void spiRec(uint8_t* buf, size_t len) {
+	memset(buf, 0xFF, len);
+	SPI.transfer(buf, len);
+ }
+
+ void spiRecIgnore(size_t len) {
+	for (size_t i=0; i < len; i++)
+		SPI.transfer(0xff);
+ }
+
+//------------------------------------------------------------------------------
+#else
+// functions for hardware SPI
+/** Send a byte to the card */
+void spiSend(uint8_t b) {
+  SPDR = b;
+  while (!(SPSR & (1 << SPIF)));
+}
+/** Receive a byte from the card */
+uint8_t spiRec(void) {
+  spiSend(0XFF);
+  return SPDR;
 }
 
-#endif // __MK64FX512__ || __MK66FX1M0__
+#endif

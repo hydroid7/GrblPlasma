@@ -45,6 +45,8 @@
   #include "../feature/pause.h"
 #endif
 
+#include <SD.h>
+#include <SPI.h>
 // public:
 
 card_flags_t CardReader::flag;
@@ -163,7 +165,7 @@ void CardReader::lsDive(const char *prepend, SdFile parent, const char * const m
   uint8_t cnt = 0;
 
   // Read the next entry from a directory
-  while (parent.readDir(&p, longFilename) > 0) {
+  while (parent.readDir(&p) > 0) {
 
     // If the entry is a directory and the action is LS_SerialPrint
     if (DIR_IS_SUBDIR(&p) && lsAction != LS_Count && lsAction != LS_GetFilename) {
@@ -237,11 +239,36 @@ void CardReader::lsDive(const char *prepend, SdFile parent, const char * const m
     }
   } // while readDir
 }
+void printDirectory(File dir, int numTabs) {
+   while(true) {
 
+     File entry =  dir.openNextFile();
+     if (! entry) {
+       // no more files
+       //Serial.println("**nomorefiles**");
+       break;
+     }
+     for (uint8_t i=0; i<numTabs; i++) {
+       Serial.print('\t');
+     }
+     Serial.print(entry.name());
+     if (entry.isDirectory()) {
+       Serial.println("/");
+       printDirectory(entry, numTabs+1);
+     } else {
+       // files have sizes, directories do not
+       Serial.print("\t\t");
+       Serial.println(entry.size(), DEC);
+     }
+     entry.close();
+   }
+}
 void CardReader::ls() {
-  lsAction = LS_SerialPrint;
+  /*lsAction = LS_SerialPrint;
   root.rewind();
-  lsDive(nullptr, root);
+  lsDive(nullptr, root);*/
+  File root = SD.open("/");
+  printDirectory(root, 0);
 }
 
 #if ENABLED(LONG_FILENAME_HOST_SUPPORT)
@@ -313,7 +340,7 @@ void CardReader::ls() {
 void CardReader::printFilename() {
   if (file.isOpen()) {
     char dosFilename[FILENAME_LENGTH];
-    file.getFilename(dosFilename);
+    //file.getFilename(dosFilename);
     SERIAL_ECHO(dosFilename);
     #if ENABLED(LONG_FILENAME_HOST_SUPPORT)
       getfilename(0, dosFilename);
@@ -330,14 +357,15 @@ void CardReader::printFilename() {
 }
 
 void CardReader::initsd() {
+
   flag.detected = false;
   if (root.isOpen()) root.close();
 
   #ifndef SPI_SPEED
     #define SPI_SPEED SPI_FULL_SPEED
   #endif
-
-  if (!sd2card.init(SPI_SPEED, SDSS)
+  SD.begin(BUILTIN_SDCARD);
+  if (!sd2card.init(SPI_HALF_SPEED, BUILTIN_SDCARD)
     #if defined(LCD_SDSS) && (LCD_SDSS != SDSS)
       && !sd2card.init(SPI_SPEED, LCD_SDSS)
     #endif
@@ -401,9 +429,9 @@ void CardReader::openLogFile(char * const path) {
 }
 
 void appendAtom(SdFile &file, char *& dst, uint8_t &cnt) {
-  file.getFilename(dst);
-  while (*dst && cnt < MAXPATHNAMELENGTH) { dst++; cnt++; }
-  if (cnt < MAXPATHNAMELENGTH) { *dst = '/'; dst++; cnt++; }
+  //file.getFilename(dst);
+  //while (*dst && cnt < MAXPATHNAMELENGTH) { dst++; cnt++; }
+  //if (cnt < MAXPATHNAMELENGTH) { *dst = '/'; dst++; cnt++; }
 }
 
 void CardReader::getAbsFilename(char *t) {
@@ -531,7 +559,7 @@ void CardReader::write_command(char *buf) {
   char* npos = nullptr;
   char* end = buf + strlen(buf) - 1;
 
-  file.writeError = false;
+  //file.writeError = false;
   if ((npos = strchr(buf, 'N')) != nullptr) {
     begin = strchr(npos, ' ') + 1;
     end = strchr(npos, '*') - 1;
@@ -541,7 +569,7 @@ void CardReader::write_command(char *buf) {
   end[3] = '\0';
   file.write(begin);
 
-  if (file.writeError) SERIAL_ERROR_MSG(MSG_SD_ERR_WRITE_TO_FILE);
+  //if (file.writeError) SERIAL_ERROR_MSG(MSG_SD_ERR_WRITE_TO_FILE);
 }
 
 //
@@ -566,7 +594,7 @@ void CardReader::checkautostart() {
     sprintf_P(autoname, PSTR("auto%c.g"), autostart_index + '0');
     dir_t p;
     root.rewind();
-    while (root.readDir(&p, nullptr) > 0) {
+    while (root.readDir(&p) > 0) {
       for (int8_t i = (int8_t)strlen((char*)p.name); i--;) p.name[i] = tolower(p.name[i]);
       if (p.name[9] != '~' && strncmp((char*)p.name, autoname, 5) == 0) {
         openAndPrintFile(autoname);
