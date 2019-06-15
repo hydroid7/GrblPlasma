@@ -693,12 +693,11 @@ void idle(
     actual_units = (float)parser.linear_value_to_mm(1);
     if (actual_position[0] != last_position[0] || actual_position[1] != last_position[1] || actual_position[2] != last_position[2] || actual_units != last_units)
     {
-      SERIAL_ECHOPGM("X: ");
-      SERIAL_ECHO((float)(actual_position[0] / scale[0]) / actual_units);
-      SERIAL_ECHOPGM(" Y: ");
-      SERIAL_ECHO((float)(actual_position[1] / scale[1]) / actual_units);
-      SERIAL_ECHOPGM(" Z: ");
-      SERIAL_ECHO((float)(actual_position[2] / scale[2]) / actual_units);
+      int precision = 5;
+      if (parser.linear_value_to_mm(1) == 1.0f) precision = 3;
+      SERIAL_ECHOPAIR_F("X: ", (float)(actual_position[0] / scale[0]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" Y: ", (float)(actual_position[1] / scale[1]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" Z: ", (float)(actual_position[2] / scale[2]) / actual_units, precision);
       SERIAL_ECHOPGM(" UNITS: ");
       if (parser.linear_value_to_mm(1) == 1.0f)
       {
