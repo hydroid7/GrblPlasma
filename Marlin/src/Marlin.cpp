@@ -695,10 +695,10 @@ void idle(
     {
       int precision = 5;
       if (parser.linear_value_to_mm(1) == 1.0f) precision = 3;
-      SERIAL_ECHOPAIR_F("X: ", (float)(actual_position[0] / scale[0]) / actual_units, precision);
-      SERIAL_ECHOPAIR_F(" Y: ", (float)(actual_position[1] / scale[1]) / actual_units, precision);
-      SERIAL_ECHOPAIR_F(" Z: ", (float)(actual_position[2] / scale[2]) / actual_units, precision);
-      SERIAL_ECHOPGM(" UNITS: ");
+      SERIAL_ECHOPAIR_F("DRO: X=", (float)(actual_position[0] / scale[0]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" Y=", (float)(actual_position[1] / scale[1]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" Z=", (float)(actual_position[2] / scale[2]) / actual_units, precision);
+      SERIAL_ECHOPGM(" UNITS=");
       if (parser.linear_value_to_mm(1) == 1.0f)
       {
         SERIAL_ECHO("MM");
