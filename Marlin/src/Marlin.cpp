@@ -671,6 +671,7 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
  float actual_units;
  const float scale[] = DEFAULT_AXIS_STEPS_PER_UNIT;
  unsigned long report_timestamp = 0;
+ bool has_printed_stop_report;
 
 void idle(
   #if ENABLED(ADVANCED_PAUSE_FEATURE)
@@ -686,18 +687,30 @@ void idle(
   /* Automatic Position Reporting during movement */
   if (millis() > report_timestamp + 100)
   {
-    report_timestamp = millis();
     actual_position[0] = stepper.position(X_AXIS);
     actual_position[1] = stepper.position(Y_AXIS);
     actual_position[2] = stepper.position(Z_AXIS);
     actual_units = (float)parser.linear_value_to_mm(1);
     if (actual_position[0] != last_position[0] || actual_position[1] != last_position[1] || actual_position[2] != last_position[2] || actual_units != last_units)
     {
-      int precision = 5;
+      has_printed_stop_report = false;
+      float traveled_dist[3];
+      traveled_dist[0] = fabs(actual_position[0] - last_position[0]) / scale[0];
+      traveled_dist[1] = fabs(actual_position[1] - last_position[1]) / scale[1];
+      traveled_dist[2] = fabs(actual_position[2] - last_position[2]) / scale[2];
+      float traveled_distance = sqrt((traveled_dist[0] * traveled_dist[0]) + (traveled_dist[1] * traveled_dist[1]) + (traveled_dist[2] * traveled_dist[2]));
+      float velocity = traveled_distance * (60000 / (millis() - report_timestamp));
+      int precision = 4;
       if (parser.linear_value_to_mm(1) == 1.0f) precision = 3;
-      SERIAL_ECHOPAIR_F("DRO: X=", (float)(actual_position[0] / scale[0]) / actual_units, precision);
-      SERIAL_ECHOPAIR_F(" Y=", (float)(actual_position[1] / scale[1]) / actual_units, precision);
-      SERIAL_ECHOPAIR_F(" Z=", (float)(actual_position[2] / scale[2]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F("DRO: X_MCS=", (float)(actual_position[0] / scale[0]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" Y_MCS=", (float)(actual_position[1] / scale[1]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" Z_MCS=", (float)(actual_position[2] / scale[2]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" X_WO=", (float)(workspace_offset[0]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" Y_WO=", (float)(workspace_offset[1]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" Z_WO=", (float)(workspace_offset[2]) / actual_units, precision);
+      SERIAL_ECHOPAIR_F(" FEEDRATE=", (float)(feedrate_mm_s) / 0.424, 1);
+      SERIAL_ECHOPAIR_F(" VELOCITY=", (float)(velocity) / actual_units, 1);
+      //
       SERIAL_ECHOPGM(" UNITS=");
       if (parser.linear_value_to_mm(1) == 1.0f)
       {
@@ -707,15 +720,23 @@ void idle(
       {
         SERIAL_ECHO("INCH");
       }
-
+      SERIAL_ECHOPGM(" STATUS=RUN");
       SERIAL_EOL();
       last_position[0] = actual_position[0];
       last_position[1] = actual_position[1];
       last_position[2] = actual_position[2];
       last_units = actual_units;
     }
-
-
+    else
+    {
+      if (has_printed_stop_report == false)
+      {
+        has_printed_stop_report = true;
+        SERIAL_ECHOPGM("DRO: STATUS=STOP FEEDRATE=0.000 VELOCITY=0.000");
+        SERIAL_EOL();
+      }
+    }
+    report_timestamp = millis();
   }
   /***********************************************/
 

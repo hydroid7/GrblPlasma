@@ -617,6 +617,7 @@ inline void get_serial_commands() {
           if (apos) {
             uint8_t checksum = 0, count = uint8_t(apos - command);
             while (count) checksum ^= command[--count];
+            SERIAL_ECHOPAIR_F("Checksum is: ", (float)checksum, 1);
             if (strtol(apos + 1, nullptr, 10) != checksum)
               return gcode_line_error(PSTR(MSG_ERR_CHECKSUM_MISMATCH), i);
           }

@@ -82,24 +82,24 @@ D8    HEATER_BED_PIN      CS1     RX4  A12 31 |   46 * * 47   | 34 A15 PWM      
 //
 // Limit Switches
 //
-#define X_STOP_PIN         24
-#define Y_STOP_PIN         26
-#define Z_STOP_PIN         28
+#define X_STOP_PIN         11
+#define Y_STOP_PIN         12
+#define Z_STOP_PIN         24
 
 //
 // Steppers
 //
-#define X_STEP_PIN         8
-#define X_DIR_PIN          7
-#define X_ENABLE_PIN       39
+#define X_STEP_PIN         0
+#define X_DIR_PIN          1
+#define X_ENABLE_PIN       6
 
-#define Y_STEP_PIN         10
-#define Y_DIR_PIN          9
-#define Y_ENABLE_PIN       20
+#define Y_STEP_PIN         2
+#define Y_DIR_PIN          3
+#define Y_ENABLE_PIN       7
 
-#define Z_STEP_PIN         33
-#define Z_DIR_PIN          34
-#define Z_ENABLE_PIN       17
+#define Z_STEP_PIN         4
+#define Z_DIR_PIN          5
+#define Z_ENABLE_PIN       8
 
 #define E0_STEP_PIN        31
 #define E0_DIR_PIN         30
@@ -126,7 +126,7 @@ D8    HEATER_BED_PIN      CS1     RX4  A12 31 |   46 * * 47   | 34 A15 PWM      
 #define ALARM_PIN          -1
 
 #define FILWIDTH_PIN        6
-#define SOL1_PIN           28
+#define SOL1_PIN           36
 
 #if 0
 // Pretty sure this is obsolete!
