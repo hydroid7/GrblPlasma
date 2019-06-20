@@ -184,7 +184,8 @@
 #ifdef MANUAL_Z_HOME_POS
   #define Z_HOME_POS MANUAL_Z_HOME_POS
 #else
-  #define Z_HOME_POS (Z_HOME_DIR < 0 ? Z_MIN_POS : Z_MAX_POS)
+  //#define Z_HOME_POS (Z_HOME_DIR < 0 ? Z_MIN_POS : Z_MAX_POS)
+  #define Z_HOME_POS 0
 #endif
 
 /**

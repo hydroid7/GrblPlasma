@@ -151,6 +151,27 @@ bool enqueue_and_echo_command(const char* cmd) {
   }
   return false;
 }
+/**
+ * Enqueue without Serial Echo
+ */
+bool enqueue_command(const char* cmd) {
+
+  //SERIAL_ECHOPGM("enqueue_and_echo_command(\"");
+  //SERIAL_ECHO(cmd);
+  //SERIAL_ECHOPGM("\") \n");
+
+  if (*cmd == 0 || *cmd == '\n' || *cmd == '\r') {
+    //SERIAL_ECHOLNPGM("Null command found...   Did not queue!");
+    return true;
+  }
+
+  if (_enqueuecommand(cmd)) {
+    //SERIAL_ECHO_START();
+    //SERIAL_ECHOLNPAIR(MSG_ENQUEUEING, cmd, "\"");
+    return true;
+  }
+  return false;
+}
 
 /**
  * Inject the next "immediate" command, when possible, onto the front of the queue.

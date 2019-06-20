@@ -258,6 +258,7 @@
  * M997 - Perform in-application firmware update
  * M999 - Restart after being stopped by error
  *
+ * M2000 - Set AVTHC voltage
  * "T" Codes
  *
  * T0-T3 - Select an extruder (tool) by index: "T<n> F<units/min>"
@@ -877,8 +878,22 @@ private:
     static void M1000();
   #endif
 
+  /*AVTHC M Codes*/
+  static void M2000();
+
+  /*Torch Control M Codes*/
+  static void M2100(); //Touch Off and fire torch
+  static void M2101(); //Shut off torch and retract
+
+
   static void T(const uint8_t tool_index);
 
 };
 
 extern GcodeSuite gcode;
+
+/*
+Global Variables for AVTHC
+*/
+extern float thc_arc_voltage;
+extern float thc_set_voltage;

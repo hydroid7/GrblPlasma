@@ -672,6 +672,32 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
  const float scale[] = DEFAULT_AXIS_STEPS_PER_UNIT;
  unsigned long report_timestamp = 0;
  bool has_printed_stop_report;
+ /**
+  Variables used for AVTHC
+ **/
+ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)
+ {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+ }
+ const int numReadings = 20; //Number of readings to average from
+ float readings[numReadings];      // the readings from the analog input
+ int readIndex = 0;              // the index of the current reading
+ float total = 0;                  // the running total
+ float average = 0;                // the average
+ void pull_arc_reading()
+ {
+  total = total - readings[readIndex];
+  readings[readIndex] = analogRead(A21);
+  total = total + readings[readIndex];
+  readIndex = readIndex + 1;
+  if (readIndex >= numReadings) {
+    readIndex = 0;
+  }
+  float actual_voltage = mapfloat((total / numReadings), 0.00, 190.00, 0.00, 9.59); //Calibrated by hooking 9 volt battery to input. This input should be pretty close all the way to 18 volts
+  thc_arc_voltage = actual_voltage * 50; //Scaled to 50:1
+ }
+
+
 
 void idle(
   #if ENABLED(ADVANCED_PAUSE_FEATURE)
@@ -687,6 +713,7 @@ void idle(
   /* Automatic Position Reporting during movement */
   if (millis() > report_timestamp + 100)
   {
+    pull_arc_reading();
     actual_position[0] = stepper.position(X_AXIS);
     actual_position[1] = stepper.position(Y_AXIS);
     actual_position[2] = stepper.position(Z_AXIS);
@@ -710,6 +737,8 @@ void idle(
       SERIAL_ECHOPAIR_F(" Z_WO=", (float)(workspace_offset[2]) / actual_units, precision);
       SERIAL_ECHOPAIR_F(" FEEDRATE=", (float)(feedrate_mm_s) / 0.424, 1);
       SERIAL_ECHOPAIR_F(" VELOCITY=", (float)(velocity) / actual_units, 1);
+      SERIAL_ECHOPAIR_F(" THC_SET_VOLTAGE=", thc_set_voltage, 2);
+      SERIAL_ECHOPAIR_F(" THC_ARC_VOLTAGE=", thc_arc_voltage, 2);
       //
       SERIAL_ECHOPGM(" UNITS=");
       if (parser.linear_value_to_mm(1) == 1.0f)
@@ -908,7 +937,10 @@ void setup() {
   #ifdef HAL_INIT
     HAL_init();
   #endif
-
+  SET_INPUT_PULLUP(Z_PROBE_PIN);
+  pinMode(SOL1_PIN, OUTPUT);
+  pinMode(IN_1_PIN, INPUT_PULLUP);
+  pinMode(IN_2_PIN, INPUT_PULLUP);
   #if HAS_DRIVER(L6470)
     L6470.init();         // setup SPI and then init chips
   #endif

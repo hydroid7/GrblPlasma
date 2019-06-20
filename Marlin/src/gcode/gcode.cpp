@@ -47,6 +47,12 @@ GcodeSuite gcode;
 
 #include "../Marlin.h" // for idle() and suspend_auto_report
 
+/*
+Global Variables for AVTHC
+*/
+float thc_arc_voltage;
+float thc_set_voltage;
+
 millis_t GcodeSuite::previous_move_ms;
 
 bool GcodeSuite::axis_relative_modes[] = AXIS_RELATIVE_MODES;
@@ -779,6 +785,10 @@ void GcodeSuite::process_parsed_command(
         case 413: M413(); break;                                  // M413: Enable/disable/query Power-Loss Recovery
         case 1000: M1000(); break;                                // M1000: Resume from power-loss
       #endif
+
+      case 2000: M2000(); break;
+      case 2100: M2100(); break;
+      case 2101: M2101(); break;
 
       default: parser.unknown_command_error(); break;
     }
