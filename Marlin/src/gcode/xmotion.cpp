@@ -151,19 +151,9 @@ void tick_xmotion()
     WRITE(X_ENABLE_PIN, HIGH);
     if (micros() > x_step_timer)
     {
-      /*float time_into_jog = (float)(millis() - x_jog_begin) / 1000;
-      float accel_ips_ps = accel[0] / 25.4;
-      float initial_velocity = 0.05;
-      float ips = initial_velocity + (accel_ips_ps * time_into_jog);
-      float ipm = ips * 60;
-      if (ipm > ((max_feedrate[0] / 25.4) * 60))
-      {
-        x_jog_finished_accelerating = millis();
-        ipm = ((max_feedrate[0] / 25.4) * 60);
-      }*/
       float step_delay = ((60 * 1000000) / (scale[0] * 25.4)) / fabs(x_jog_current_ipm);
       x_step_delay = (int)step_delay;
-      x_step_timer += x_step_delay;
+      x_step_timer = micros() + x_step_delay;
       WRITE(X_STEP_PIN, HIGH);
       delayMicroseconds(5);
       WRITE(X_STEP_PIN, LOW);

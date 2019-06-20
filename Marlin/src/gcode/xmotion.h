@@ -12,7 +12,7 @@ extern bool thc_enabled;
 /*
 Global Variables non-syncronized Jogging
 */
-
+extern float jog_speed;
 extern float x_jog_current_ipm;
 extern bool x_jog_cancel;
 
