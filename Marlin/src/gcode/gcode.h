@@ -259,6 +259,12 @@
  * M999 - Restart after being stopped by error
  *
  * M2000 - Set AVTHC voltage
+ * M2001 - Enable THC
+ * M2002 - Disable THC
+ * M2003 - THC Status report
+ *
+ * M2100 - Touchoff and strike Arc
+ * M2101 - Extinguish arc and retract to Z Home
  * "T" Codes
  *
  * T0-T3 - Select an extruder (tool) by index: "T<n> F<units/min>"
@@ -880,6 +886,9 @@ private:
 
   /*AVTHC M Codes*/
   static void M2000();
+  static void M2001();
+  static void M2002();
+  static void M2003();
 
   /*Torch Control M Codes*/
   static void M2100(); //Touch Off and fire torch
@@ -891,9 +900,3 @@ private:
 };
 
 extern GcodeSuite gcode;
-
-/*
-Global Variables for AVTHC
-*/
-extern float thc_arc_voltage;
-extern float thc_set_voltage;
