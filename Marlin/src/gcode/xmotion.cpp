@@ -86,21 +86,26 @@ void tick_xmotion()
     jog_accel_timer = millis();
     if (fabs(x_jog_current_ipm) > 0)
     {
+      float max_x_jog = jog_speed;
+      if (max_x_jog > max_feedrate[0])
+      {
+        max_x_jog = (max_feedrate[0] / 25.4) * 60;
+      }
       if (x_jog_cancel == false) //Accelerate to target
       {
-        if (fabs(x_jog_current_ipm) < jog_speed) //We need to accelerate to jog speed!
+        if (fabs(x_jog_current_ipm) < max_x_jog) //We need to accelerate to jog speed!
         {
           float accel_ips_ps = accel[0] / 25.4;
           float accel_per_ten_ms = accel_ips_ps;
           if (x_jog_current_ipm > 0) //We are a positive jog. Add accel to increase speed
           {
             x_jog_current_ipm += accel_per_ten_ms;
-            if (fabs(x_jog_current_ipm) > jog_speed) x_jog_current_ipm = jog_speed;
+            if (fabs(x_jog_current_ipm) > max_x_jog) x_jog_current_ipm = max_x_jog;
           }
           else //We are a negative jog. Add negative accel to increase speed
           {
             x_jog_current_ipm += (accel_per_ten_ms * -1);
-            if (fabs(x_jog_current_ipm) > jog_speed) x_jog_current_ipm = jog_speed * -1;
+            if (fabs(x_jog_current_ipm) > max_x_jog) x_jog_current_ipm = max_x_jog * -1;
           }
         }
       }
