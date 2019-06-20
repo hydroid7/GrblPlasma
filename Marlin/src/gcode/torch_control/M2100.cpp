@@ -8,7 +8,7 @@ void probe_z()
 {
   while(READ(Z_PROBE_PIN) == HIGH)
   {
-    inc_move_at_fixed_rate(-0.010, 10);
+    inc_move_z_at_fixed_rate(-0.010, 10);
   }
 }
 void GcodeSuite::M2100() {
@@ -34,10 +34,10 @@ void GcodeSuite::M2100() {
   for (int x = 0; x < retry; x++) //Retry 4 times
   {
     probe_z();
-    inc_move_at_fixed_rate(0.1 + pierce_height, 10); //Floating head take-up + pirce_height
+    inc_move_z_at_fixed_rate(0.1 + pierce_height, 10); //Floating head take-up + pirce_height
     fire_torch();
     delay(pierce_delay * 1000); //Delay for pierce
-    inc_move_at_fixed_rate(cut_height - pierce_height, 10); //Move to cut height
+    inc_move_z_at_fixed_rate(cut_height - pierce_height, 10); //Move to cut height
     if (READ(IN_1_PIN) == LOW)
     {
       break; //We have an ARC-OK signal!
@@ -48,7 +48,7 @@ void GcodeSuite::M2100() {
       SERIAL_ECHOPGM("Arc Transfer failed, retrying!");
       SERIAL_EOL();
       extinguish_torch();
-      inc_move_at_fixed_rate(1.00, 25);
+      inc_move_z_at_fixed_rate(1.00, 25);
     }
   }
  }

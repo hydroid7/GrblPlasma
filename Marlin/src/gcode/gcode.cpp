@@ -786,6 +786,8 @@ void GcodeSuite::process_parsed_command(
       case 2003: M2003(); break;
       case 2100: M2100(); break;
       case 2101: M2101(); break;
+      case 3000: M3000(); break;
+      case 3001: M3001(); break;
 
       default: parser.unknown_command_error(); break;
     }

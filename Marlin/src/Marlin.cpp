@@ -674,7 +674,7 @@ void idle(
 
   ui.update();
 
-  tick_xmotion_position_report();
+  tick_xmotion();
 
   #if ENABLED(HOST_KEEPALIVE_FEATURE)
     gcode.host_keepalive();

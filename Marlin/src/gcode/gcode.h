@@ -265,6 +265,9 @@
  *
  * M2100 - Touchoff and strike Arc
  * M2101 - Extinguish arc and retract to Z Home
+ *
+ * M3000 - Non-Syncronized jogging enable axis by P word
+ * M3001 - Non-Syncronized jogging disable axis by P word
  * "T" Codes
  *
  * T0-T3 - Select an extruder (tool) by index: "T<n> F<units/min>"
@@ -893,6 +896,10 @@ private:
   /*Torch Control M Codes*/
   static void M2100(); //Touch Off and fire torch
   static void M2101(); //Shut off torch and retract
+
+  /*Non-Syncronized Jogging*/
+  static void M3000();
+  static void M3001();
 
 
   static void T(const uint8_t tool_index);
