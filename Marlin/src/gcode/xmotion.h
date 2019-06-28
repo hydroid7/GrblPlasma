@@ -15,6 +15,7 @@ Global Variables non-syncronized Jogging
 extern float jog_speed;
 extern float x_jog_current_ipm;
 extern bool x_jog_cancel;
+extern float x_jog_begin_position;
 
 void tick_xmotion();
 void inc_move_z_at_fixed_rate(float, float);

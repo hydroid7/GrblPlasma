@@ -40,6 +40,8 @@ unsigned long x_step_timer = 0;
 int x_step_delay = 0;
 float x_jog_current_ipm;
 bool x_jog_cancel = false;
+float x_jog_begin_position;
+float x_distance_to_decel;
 
 
 /**
@@ -93,12 +95,27 @@ void tick_xmotion()
       }
       if (x_jog_cancel == false) //Accelerate to target
       {
+        float accel_ips_ps = accel[0] / 25.4;
+        float accel_per_ten_ms = accel_ips_ps;
+        float hard_limit = X_MAX_POS;
+        if (x_jog_current_ipm < 0) hard_limit = X_MIN_POS;
+        float soft_limit_distance = fabs((hard_limit - (stepper.position(X_AXIS) / scale[0])) / 25.4);
         if (fabs(x_jog_current_ipm) < max_x_jog) //We need to accelerate to jog speed!
         {
-          float accel_ips_ps = accel[0] / 25.4;
-          float accel_per_ten_ms = accel_ips_ps;
           if (x_jog_current_ipm > 0) //We are a positive jog. Add accel to increase speed
           {
+            //If we continue to accelerate to jog speed, can we deccelerate in time to come to a stop before hitting our positive soft limit?
+            x_distance_to_decel = ((stepper.position(X_AXIS) / scale[0]) / 25.4) - x_jog_begin_position;
+            //SERIAL_ECHOPAIR_F("distance_to_decel: ", distance_to_decel, 4);
+            //SERIAL_EOL();
+            //SERIAL_ECHOPAIR_F("soft_limit_distance: ", soft_limit_distance, 4);
+            //SERIAL_EOL();
+            if (x_distance_to_decel > soft_limit_distance)
+            {
+              //SERIAL_ECHOPGM("Time to stop accelerating and start deccelerating!");
+              //SERIAL_EOL();
+              x_jog_cancel = true;
+            }
             x_jog_current_ipm += accel_per_ten_ms;
             if (fabs(x_jog_current_ipm) > max_x_jog) x_jog_current_ipm = max_x_jog;
           }
@@ -106,6 +123,13 @@ void tick_xmotion()
           {
             x_jog_current_ipm += (accel_per_ten_ms * -1);
             if (fabs(x_jog_current_ipm) > max_x_jog) x_jog_current_ipm = max_x_jog * -1;
+          }
+        }
+        else //Were at target velocity, just need to check boundries now
+        {
+          if (x_distance_to_decel > soft_limit_distance)
+          {
+            x_jog_cancel = true;
           }
         }
       }
@@ -117,11 +141,19 @@ void tick_xmotion()
           float accel_per_ten_ms = accel_ips_ps;
           if (x_jog_current_ipm > 0) //We are a positive jog. Subtract accel to decrease speed
           {
+            /*if (current_position[X_AXIS] >= X_MAX_POS - 0.5)
+            {
+              x_jog_current_ipm = 0;
+            }*/
             x_jog_current_ipm -= accel_per_ten_ms;
             if (x_jog_current_ipm < 0) x_jog_current_ipm = 0;
           }
           else //We are a negative jog. Subtract negative accel to decrease speed
           {
+            /*if (current_position[X_AXIS] <= X_MIN_POS + 0.5)
+            {
+              x_jog_current_ipm = 0;
+            }*/
             x_jog_current_ipm -= (accel_per_ten_ms * -1);
             if (x_jog_current_ipm > 0) x_jog_current_ipm = 0;
           }
@@ -151,22 +183,32 @@ void tick_xmotion()
     WRITE(X_ENABLE_PIN, HIGH);
     if (micros() > x_step_timer)
     {
-      float step_delay = ((60 * 1000000) / (scale[0] * 25.4)) / fabs(x_jog_current_ipm);
-      x_step_delay = (int)step_delay;
-      x_step_timer = micros() + x_step_delay;
-      WRITE(X_STEP_PIN, HIGH);
-      delayMicroseconds(5);
-      WRITE(X_STEP_PIN, LOW);
-      if (x_jog_current_ipm > 0)
-      {
-        stepper.set_position(X_AXIS, stepper.position(X_AXIS) + 1);
-      }
-      else
-      {
-        stepper.set_position(X_AXIS, stepper.position(X_AXIS) - 1);
-      }
-      current_position[X_AXIS] = (stepper.position(X_AXIS) / scale[2]);
-      planner.set_machine_position_mm(current_position);
+        float step_delay = ((60 * 1000000) / (scale[0] * 25.4)) / fabs(x_jog_current_ipm);
+        x_step_delay = (int)step_delay;
+        x_step_timer = micros() + x_step_delay;
+        if (x_jog_current_ipm > 0)
+        {
+          if (current_position[X_AXIS] + (1 / scale[0]) > X_MAX_POS) //Can't travel past hard stop!
+          {
+            x_jog_current_ipm = 0;
+            return;
+          }
+          stepper.set_position(X_AXIS, stepper.position(X_AXIS) + 1);
+        }
+        else
+        {
+          if (current_position[X_AXIS] - (1 / scale[0]) < X_MIN_POS) //Can't travel past hard stop!
+          {
+            x_jog_current_ipm = 0;
+            return;
+          }
+          stepper.set_position(X_AXIS, stepper.position(X_AXIS) - 1);
+        }
+        WRITE(X_STEP_PIN, HIGH);
+        delayMicroseconds(5);
+        WRITE(X_STEP_PIN, LOW);
+        current_position[X_AXIS] = (stepper.position(X_AXIS) / scale[0]);
+        planner.set_machine_position_mm(current_position);
     }
   }
  /* Automatic Position Reporting during movement */
@@ -198,6 +240,7 @@ void tick_xmotion()
      SERIAL_ECHOPAIR_F(" VELOCITY=", (float)(velocity) / actual_units, 1);
      SERIAL_ECHOPAIR_F(" THC_SET_VOLTAGE=", thc_set_voltage, 2);
      SERIAL_ECHOPAIR_F(" THC_ARC_VOLTAGE=", thc_arc_voltage, 2);
+     //SERIAL_ECHOPAIR_F(" X_Cur=", current_position[X_AXIS], 4);
      //
      SERIAL_ECHOPGM(" UNITS=");
      if (parser.linear_value_to_mm(1) == 1.0f)

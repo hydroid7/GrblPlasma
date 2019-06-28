@@ -17,6 +17,12 @@ void GcodeSuite::M3000() {
   }
   if (axis == 0)
   {
+    if (fabs(x_jog_current_ipm) > 0)
+    {
+      SERIAL_ECHOPGM("Can't Jog until axis is stopped!");
+      SERIAL_EOL();
+      return;
+    }
     if (direction > 0)
     {
       x_jog_current_ipm = 5.00;
@@ -26,6 +32,7 @@ void GcodeSuite::M3000() {
       x_jog_current_ipm = -5.00;
     }
     x_jog_cancel = false;
+    x_jog_begin_position = current_position[X_AXIS] / 25.4;
     SERIAL_ECHOPAIR("Jogging Axis: ", axis);
     SERIAL_EOL();
   }

@@ -101,6 +101,10 @@ D8    HEATER_BED_PIN      CS1     RX4  A12 31 |   46 * * 47   | 34 A15 PWM      
 #define Y_DIR_PIN          3
 #define Y_ENABLE_PIN       7
 
+#define Y2_STEP_PIN        9
+#define Y2_DIR_PIN         10
+#define Y2_ENABLE_PIN      36
+
 #define Z_STEP_PIN         4
 #define Z_DIR_PIN          5
 #define Z_ENABLE_PIN       8
