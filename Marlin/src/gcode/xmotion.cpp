@@ -143,13 +143,13 @@ void tick_jog_engine()
           float accel_per_ten_ms = accel_ips_ps;
           float hard_limit = jog_interface[x].max_pos;
           if (jog_interface[x].jog_current_ipm < 0) hard_limit = jog_interface[x].min_pos;
-          float soft_limit_distance = fabs((hard_limit - (stepper.position(jog_interface[x].axis_number) / scale[jog_interface[x].axis_number])) / 25.4);
+          float soft_limit_distance = fabs((fabs(hard_limit) - (stepper.position(jog_interface[x].axis_number) / scale[jog_interface[x].axis_number])) / 25.4);
           if (fabs(jog_interface[x].jog_current_ipm) < max_jog) //We need to accelerate to jog speed!
           {
             if (jog_interface[x].jog_current_ipm > 0) //We are a positive jog. Add accel to increase speed
             {
               //If we continue to accelerate to jog speed, can we deccelerate in time to come to a stop before hitting our positive soft limit?
-              jog_interface[x].distance_to_decel = ((stepper.position(jog_interface[x].axis_number) / scale[jog_interface[x].axis_number]) / 25.4) - jog_interface[x].jog_begin_position;
+              jog_interface[x].distance_to_decel = fabs((current_position[jog_interface[x].axis_number] / 25.4) - jog_interface[x].jog_begin_position);
               //SERIAL_ECHOPAIR_F("distance_to_decel: ", distance_to_decel, 4);
               //SERIAL_EOL();
               //SERIAL_ECHOPAIR_F("soft_limit_distance: ", soft_limit_distance, 4);
