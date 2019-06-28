@@ -95,19 +95,31 @@ void init_xmotion()
 void jog_write_enable_pin(AxisEnum axis, bool val)
 {
   if (axis == X_AXIS) WRITE(X_ENABLE_PIN, val);
-  if (axis == Y_AXIS) WRITE(Y_ENABLE_PIN, val);
+  if (axis == Y_AXIS)
+  {
+    WRITE(Y_ENABLE_PIN, val);
+    WRITE(Y2_ENABLE_PIN, val);
+  }
   if (axis == Z_AXIS) WRITE(Z_ENABLE_PIN, val);
 }
 void jog_write_step_pin(AxisEnum axis, bool val)
 {
   if (axis == X_AXIS) WRITE(X_STEP_PIN, val);
-  if (axis == Y_AXIS) WRITE(Y_STEP_PIN, val);
+  if (axis == Y_AXIS)
+  {
+    WRITE(Y_STEP_PIN, val);
+    WRITE(Y2_STEP_PIN, val);
+  }
   if (axis == Z_AXIS) WRITE(Z_STEP_PIN, val);
 }
 void jog_write_dir_pin(AxisEnum axis, bool val)
 {
   if (axis == X_AXIS) WRITE(X_DIR_PIN, val);
-  if (axis == Y_AXIS) WRITE(Y_DIR_PIN, val);
+  if (axis == Y_AXIS)
+  {
+    WRITE(Y_DIR_PIN, val);
+    WRITE(Y2_DIR_PIN, !val);
+  }
   if (axis == Z_AXIS) WRITE(Z_DIR_PIN, val);
 }
 void tick_jog_engine()
