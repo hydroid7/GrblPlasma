@@ -5,7 +5,7 @@
 typedef struct
 {
   millis_t jog_accel_timer = 0;
-  unsigned step_timer = 0;
+  unsigned long step_timer = 0;
   int step_delay = 0;
   float jog_current_ipm;
   bool jog_cancel = false;
@@ -28,6 +28,7 @@ extern float thc_set_voltage;
 extern bool thc_enabled;
 
 void init_xmotion();
+void tick_thc_engine();
 void tick_jog_engine();
 void tick_xmotion();
 void inc_move_z_at_fixed_rate(float, float);

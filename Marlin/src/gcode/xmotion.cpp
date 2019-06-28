@@ -22,11 +22,17 @@
 
 #include "../Marlin.h" // for idle() and suspend_auto_report
 #include "xmotion.h"
+
+float current_velocity; //Calculated by auto-report, required by AVTHC engine. Always in IPM
+float target_velocity; //Calculated by auto-report, required by AVTHC engine. Always in IPM
 /*
 Global Variables for AVTHC
 */
 float thc_arc_voltage;
 float thc_set_voltage;
+float thc_velocity_tolorance = 5; //Must be within X inches/min to are target velocity before ATHC starts to comp Z height
+float thc_voltage_tolorance = 3; //If we are whithin X volts of our target voltage, don't make Z adjustments!
+float thc_comp_velocity = 5; //IPM to make adjustments at. Not currently supported until I add independend jog speeds to jog engine!
 bool thc_enabled;
 
 /*
@@ -91,6 +97,76 @@ void init_xmotion()
   jog_interface[2].axis_number = Z_AXIS;
   jog_interface[2].axis_step_len = 5; //uS
   jog_interface[2].axis_invert_dir = INVERT_Z_DIR;
+}
+/*float thc_arc_voltage;
+float thc_set_voltage;
+float thc_velocity_tolorance = 0.20; //Must be within 20% of target velocity
+float thc_comp_velocity = 2; //IPM to make adjustments at
+bool thc_enabled;*/
+
+bool IsInTolerance(float a, float b, float t)
+{
+  float diff;
+  if (a > b)
+  {
+    diff = a - b;
+  }
+  else
+  {
+    diff = b - a;
+  }
+  if (diff <= fabs(t) && diff >= -fabs(t))
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+void tick_thc_engine()
+{
+  if (thc_enabled && thc_set_voltage > 30)
+  {
+    if (IsInTolerance(target_velocity, current_velocity, thc_velocity_tolorance)) //Check to see if we are within our velocity tolorance
+    {
+      if (READ(IN_1_PIN) == LOW) //Make sure we have our ARC_OK signal, otherwise something is wrong and we should not comp torch!
+      {
+        if (IsInTolerance(thc_arc_voltage, thc_set_voltage, thc_voltage_tolorance)) //Check to see if we are in tolorance
+        {
+          jog_interface[2].jog_cancel = true; //Cancel any current jog on Z axis
+        }
+        else
+        {
+          if (thc_set_voltage > thc_arc_voltage) //Jog Z positive
+          {
+            if (fabs(jog_interface[2].jog_current_ipm) > 0) //Make sure we arn't already comping Z
+            {
+              //Cancel Jog motion so next iteration can reverse direction
+              jog_interface[2].jog_cancel = true;
+            }
+            else
+            {
+              jog_interface[2].jog_current_ipm = 5.00;
+            }
+          }
+          else //Jog Z Negative
+          {
+            if (fabs(jog_interface[2].jog_current_ipm) > 0) //Make sure we arn't already comping Z
+            {
+              //Cancel Jog motion so next iteration can reverse direction
+              jog_interface[2].jog_cancel = true;
+            }
+            else
+            {
+              jog_interface[2].jog_current_ipm = -5.00;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 void jog_write_enable_pin(AxisEnum axis, bool val)
 {
@@ -222,6 +298,17 @@ void tick_jog_engine()
       //WRITE(jog_interface[x].axis_enable_pin, HIGH);
       if (micros() > jog_interface[x].step_timer)
       {
+          if (fabs(jog_interface[x].jog_current_ipm) < 5)
+          {
+            if (jog_interface[x].jog_current_ipm > 0)
+            {
+              jog_interface[x].jog_current_ipm = 5;
+            }
+            else
+            {
+              jog_interface[x].jog_current_ipm = -5;
+            }
+          }
           float step_delay = ((60 * 1000000) / (scale[jog_interface[x].axis_number] * 25.4)) / fabs(jog_interface[x].jog_current_ipm);
           jog_interface[x].step_delay = (int)step_delay;
           jog_interface[x].step_timer = micros() + jog_interface[x].step_delay;
@@ -274,6 +361,8 @@ void tick_xmotion()
      traveled_dist[2] = fabs(actual_position[2] - last_position[2]) / scale[2];
      float traveled_distance = sqrt((traveled_dist[0] * traveled_dist[0]) + (traveled_dist[1] * traveled_dist[1]) + (traveled_dist[2] * traveled_dist[2]));
      float velocity = traveled_distance * (60000 / (millis() - report_timestamp));
+     current_velocity = velocity / 25.4;
+     target_velocity = (feedrate_mm_s) / 0.424;
      int precision = 4;
      if (parser.linear_value_to_mm(1) == 1.0f) precision = 3;
      SERIAL_ECHOPAIR_F("DRO: X_MCS=", (float)(actual_position[0] / scale[0]) / actual_units, precision);
@@ -309,10 +398,12 @@ void tick_xmotion()
      if (has_printed_stop_report == false)
      {
        has_printed_stop_report = true;
+       current_velocity = 0;
        SERIAL_ECHOPGM("DRO: STATUS=STOP FEEDRATE=0.000 VELOCITY=0.000");
        SERIAL_EOL();
      }
    }
+   tick_thc_engine();
    report_timestamp = millis();
  }
  /***********************************************/

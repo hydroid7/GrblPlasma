@@ -4,7 +4,7 @@
 #include "../../module/stepper.h"
 
 void GcodeSuite::M2000() {
-  const float voltage_setting = parser.floatval('P', 100.00);
+  const float voltage_setting = parser.floatval('V', 100.00);
   if (voltage_setting < 30)
   {
     SERIAL_ECHOPGM("Turning THC Off!");
