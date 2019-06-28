@@ -1122,6 +1122,7 @@ void setup() {
   #if ENABLED(PRUSA_MMU2)
     mmu2.init();
   #endif
+  init_xmotion();
 }
 
 /**

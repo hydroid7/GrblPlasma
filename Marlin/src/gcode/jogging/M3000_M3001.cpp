@@ -17,7 +17,7 @@ void GcodeSuite::M3000() {
   }
   if (axis == 0)
   {
-    if (fabs(x_jog_current_ipm) > 0)
+    if (fabs(jog_interface[0].jog_current_ipm) > 0)
     {
       SERIAL_ECHOPGM("Can't Jog until axis is stopped!");
       SERIAL_EOL();
@@ -25,18 +25,59 @@ void GcodeSuite::M3000() {
     }
     if (direction > 0)
     {
-      x_jog_current_ipm = 5.00;
+      jog_interface[0].jog_current_ipm = 5.00;
     }
     else
     {
-      x_jog_current_ipm = -5.00;
+      jog_interface[0].jog_current_ipm = -5.00;
     }
-    x_jog_cancel = false;
-    x_jog_begin_position = current_position[X_AXIS] / 25.4;
+    jog_interface[0].jog_cancel = false;
+    jog_interface[0].jog_begin_position = current_position[X_AXIS] / 25.4;
     SERIAL_ECHOPAIR("Jogging Axis: ", axis);
     SERIAL_EOL();
   }
-
+  if (axis == 1)
+  {
+    if (fabs(jog_interface[1].jog_current_ipm) > 0)
+    {
+      SERIAL_ECHOPGM("Can't Jog until axis is stopped!");
+      SERIAL_EOL();
+      return;
+    }
+    if (direction > 0)
+    {
+      jog_interface[1].jog_current_ipm = 5.00;
+    }
+    else
+    {
+      jog_interface[1].jog_current_ipm = -5.00;
+    }
+    jog_interface[1].jog_cancel = false;
+    jog_interface[1].jog_begin_position = current_position[Y_AXIS] / 25.4;
+    SERIAL_ECHOPAIR("Jogging Axis: ", axis);
+    SERIAL_EOL();
+  }
+  if (axis == 2)
+  {
+    if (fabs(jog_interface[2].jog_current_ipm) > 0)
+    {
+      SERIAL_ECHOPGM("Can't Jog until axis is stopped!");
+      SERIAL_EOL();
+      return;
+    }
+    if (direction > 0)
+    {
+      jog_interface[2].jog_current_ipm = 5.00;
+    }
+    else
+    {
+      jog_interface[2].jog_current_ipm = -5.00;
+    }
+    jog_interface[2].jog_cancel = false;
+    jog_interface[2].jog_begin_position = current_position[Z_AXIS] / 25.4;
+    SERIAL_ECHOPAIR("Jogging Axis: ", axis);
+    SERIAL_EOL();
+  }
 }
 void GcodeSuite::M3001() {
   const float axis = parser.floatval('P', 10);
@@ -44,6 +85,14 @@ void GcodeSuite::M3001() {
   SERIAL_EOL();
   if (axis == 0)
   {
-    x_jog_cancel = true;
+    jog_interface[0].jog_cancel = true;
+  }
+  if (axis == 1)
+  {
+    jog_interface[1].jog_cancel = true;
+  }
+  if (axis == 2)
+  {
+    jog_interface[2].jog_cancel = true;
   }
 }
