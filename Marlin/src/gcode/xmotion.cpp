@@ -194,7 +194,14 @@ void jog_write_dir_pin(AxisEnum axis, bool val)
   if (axis == Y_AXIS)
   {
     WRITE(Y_DIR_PIN, val);
-    WRITE(Y2_DIR_PIN, !val);
+    if (INVERT_Y2_VS_Y_DIR == true)
+    {
+      WRITE(Y2_DIR_PIN, !val);
+    }
+    else
+    {
+      WRITE(Y2_DIR_PIN, val);
+    }
   }
   if (axis == Z_AXIS) WRITE(Z_DIR_PIN, val);
 }
