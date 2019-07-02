@@ -52,6 +52,7 @@ const float scale[] = DEFAULT_AXIS_STEPS_PER_UNIT;
 const float accel[] = DEFAULT_MAX_ACCELERATION;
 const float max_feedrate[] = DEFAULT_MAX_FEEDRATE;
 unsigned long report_timestamp = 0;
+unsigned long arc_voltage_timestamp = 0;
 bool has_printed_stop_report;
 /**
  Variables used for AVTHC
@@ -60,7 +61,7 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 {
  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-const int numReadings = 20; //Number of readings to average from
+const int numReadings = 100; //Number of readings to average from
 float readings[numReadings];      // the readings from the analog input
 int readIndex = 0;              // the index of the current reading
 float total = 0;                  // the running total
@@ -335,10 +336,14 @@ void tick_jog_engine()
 void tick_xmotion()
 {
   tick_jog_engine();
+  if (millis() > arc_voltage_timestamp + 10)
+  {
+    pull_arc_reading();
+    arc_voltage_timestamp = millis();
+  }
  /* Automatic Position Reporting during movement */
  if (millis() > report_timestamp + 100)
  {
-   pull_arc_reading();
    actual_position[0] = stepper.position(X_AXIS);
    actual_position[1] = stepper.position(Y_AXIS);
    actual_position[2] = stepper.position(Z_AXIS);
