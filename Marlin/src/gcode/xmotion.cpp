@@ -32,7 +32,7 @@ float thc_arc_voltage;
 float thc_set_voltage;
 float thc_velocity_tolorance = 5; //Must be within X inches/min to are target velocity before ATHC starts to comp Z height
 float thc_voltage_tolorance = 3; //If we are whithin X volts of our target voltage, don't make Z adjustments!
-float thc_comp_velocity = 5; //IPM to make adjustments at. Not currently supported until I add independend jog speeds to jog engine!
+float thc_comp_velocity = 40; //IPM to make adjustments at.
 bool thc_enabled;
 
 /*
@@ -135,33 +135,17 @@ void tick_thc_engine()
       {
         if (IsInTolerance(thc_arc_voltage, thc_set_voltage, thc_voltage_tolorance)) //Check to see if we are in tolorance
         {
-          jog_interface[2].jog_cancel = true; //Cancel any current jog on Z axis
+          //Don't move at all
         }
         else
         {
           if (thc_set_voltage > thc_arc_voltage) //Jog Z positive
           {
-            if (fabs(jog_interface[2].jog_current_ipm) > 0) //Make sure we arn't already comping Z
-            {
-              //Cancel Jog motion so next iteration can reverse direction
-              jog_interface[2].jog_cancel = true;
-            }
-            else
-            {
-              jog_interface[2].jog_current_ipm = 5.00;
-            }
+            inc_move_z_at_fixed_rate(0.010, thc_comp_velocity);
           }
           else //Jog Z Negative
           {
-            if (fabs(jog_interface[2].jog_current_ipm) > 0) //Make sure we arn't already comping Z
-            {
-              //Cancel Jog motion so next iteration can reverse direction
-              jog_interface[2].jog_cancel = true;
-            }
-            else
-            {
-              jog_interface[2].jog_current_ipm = -5.00;
-            }
+            inc_move_z_at_fixed_rate(-0.010, thc_comp_velocity);
           }
         }
       }
@@ -432,7 +416,6 @@ void inc_move_z_at_fixed_rate(float distance, float feedrate)
   //SERIAL_EOL();
   WRITE(Z_ENABLE_PIN, HIGH);
   int move;
-  int32_t stepper_position = stepper.position(Z_AXIS);
   if (distance > 0) //Positive move
   {
     WRITE(Z_DIR_PIN, positive_direction);
@@ -449,21 +432,20 @@ void inc_move_z_at_fixed_rate(float distance, float feedrate)
     delayMicroseconds((int)step_delay);
     WRITE(Z_STEP_PIN, LOW);
     delayMicroseconds(10);
-    stepper_position += move;
-    stepper.set_position(Z_AXIS, stepper_position);
-    current_position[Z_AXIS] = (stepper_position / scale[2]);
-    planner.set_machine_position_mm(current_position);
+    //stepper.set_position(Z_AXIS, stepper.position(Z_AXIS) + move);
+    //current_position[Z_AXIS] = (stepper.position(Z_AXIS) / scale[2]);
+    //planner.set_machine_position_mm(current_position);
     tick_xmotion();
   }
 }
-void plan_move_inc(float dist)
+/*void plan_move_inc(float dist)
 {
   destination[Z_AXIS] = current_position[Z_AXIS] + (dist * 25.4);
   feedrate_mm_s = 254;
   sync_plan_position_e();
   prepare_move_to_destination();
   planner.synchronize();
-}
+}*/
 void fire_torch()
 {
   extDigitalWrite(SOL1_PIN, HIGH);
