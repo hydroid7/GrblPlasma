@@ -45,6 +45,7 @@ jog_axis_t jog_interface[3];
  Variables used for automatic position reporting during motion
 **/
 int32_t last_position[3];
+float last_work_offset_position[3];
 float last_units;
 int32_t actual_position[3];
 float actual_units;
@@ -53,7 +54,8 @@ const float accel[] = DEFAULT_MAX_ACCELERATION;
 const float max_feedrate[] = DEFAULT_MAX_FEEDRATE;
 unsigned long report_timestamp = 0;
 unsigned long arc_voltage_timestamp = 0;
-bool has_printed_stop_report;
+int has_printed_stop_report = 0;
+bool print_full_report = false;
 /**
  Variables used for AVTHC
 **/
@@ -348,9 +350,11 @@ void tick_xmotion()
    actual_position[1] = stepper.position(Y_AXIS);
    actual_position[2] = stepper.position(Z_AXIS);
    actual_units = (float)parser.linear_value_to_mm(1);
-   if (actual_position[0] != last_position[0] || actual_position[1] != last_position[1] || actual_position[2] != last_position[2] || actual_units != last_units)
+   int precision = 4;
+   if (actual_position[0] != last_position[0] || actual_position[1] != last_position[1] || actual_position[2] != last_position[2] || workspace_offset[0] != last_work_offset_position[0] || workspace_offset[1] != last_work_offset_position[1] || workspace_offset[2] != last_work_offset_position[2] || actual_units != last_units || print_full_report == true)
    {
-     has_printed_stop_report = false;
+     print_full_report = false;
+     has_printed_stop_report = 0;
      float traveled_dist[3];
      traveled_dist[0] = fabs(actual_position[0] - last_position[0]) / scale[0];
      traveled_dist[1] = fabs(actual_position[1] - last_position[1]) / scale[1];
@@ -359,7 +363,6 @@ void tick_xmotion()
      float velocity = traveled_distance * (60000 / (millis() - report_timestamp));
      current_velocity = velocity / 25.4;
      target_velocity = (feedrate_mm_s) / 0.424;
-     int precision = 4;
      if (parser.linear_value_to_mm(1) == 1.0f) precision = 3;
      SERIAL_ECHOPAIR_F("DRO: X_MCS=", (float)(actual_position[0] / scale[0]) / actual_units, precision);
      SERIAL_ECHOPAIR_F(" Y_MCS=", (float)(actual_position[1] / scale[1]) / actual_units, precision);
@@ -387,15 +390,21 @@ void tick_xmotion()
      last_position[0] = actual_position[0];
      last_position[1] = actual_position[1];
      last_position[2] = actual_position[2];
+     last_work_offset_position[0] = workspace_offset[0];
+     last_work_offset_position[1] = workspace_offset[1];
+     last_work_offset_position[2] = workspace_offset[2];
      last_units = actual_units;
    }
    else
    {
-     if (has_printed_stop_report == false)
+     if (has_printed_stop_report < 10)
      {
-       has_printed_stop_report = true;
+       has_printed_stop_report++;
        current_velocity = 0;
        SERIAL_ECHOPGM("DRO: STATUS=STOP FEEDRATE=0.000 VELOCITY=0.000");
+       SERIAL_ECHOPAIR_F(" X_WO=", (float)(workspace_offset[0]) / actual_units, precision);
+       SERIAL_ECHOPAIR_F(" Y_WO=", (float)(workspace_offset[1]) / actual_units, precision);
+       SERIAL_ECHOPAIR_F(" Z_WO=", (float)(workspace_offset[2]) / actual_units, precision);
        SERIAL_EOL();
      }
    }

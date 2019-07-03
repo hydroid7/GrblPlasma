@@ -4,11 +4,13 @@
 #include "../../module/stepper.h"
 
 void GcodeSuite::M2001() {
+  planner.synchronize();
   SERIAL_ECHOPGM("THC Enabled!");
   SERIAL_EOL();
   thc_enabled = true;
 }
 void GcodeSuite::M2002() {
+  planner.synchronize();
   SERIAL_ECHOPGM("THC Disabled!");
   SERIAL_EOL();
   thc_enabled = false;

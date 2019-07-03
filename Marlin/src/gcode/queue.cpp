@@ -265,7 +265,7 @@ void flush_and_request_resend() {
   SERIAL_FLUSH();
   SERIAL_ECHOPGM(MSG_RESEND);
   SERIAL_ECHOLN(gcode_LastN + 1);
-  ok_to_send();
+  //ok_to_send();
 }
 
 inline bool serial_data_available() {

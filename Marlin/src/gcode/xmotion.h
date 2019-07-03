@@ -26,6 +26,7 @@ Global Variables for AVTHC
 extern float thc_arc_voltage;
 extern float thc_set_voltage;
 extern bool thc_enabled;
+extern bool print_full_report;
 
 void init_xmotion();
 void tick_thc_engine();

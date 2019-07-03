@@ -4,6 +4,7 @@
 #include "../../module/stepper.h"
 
 void GcodeSuite::M2000() {
+  planner.synchronize();
   const float voltage_setting = parser.floatval('V', 100.00);
   if (voltage_setting < 30)
   {

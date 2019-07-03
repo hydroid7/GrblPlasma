@@ -23,6 +23,7 @@
 #include "../../inc/MarlinConfig.h"
 
 #include "../gcode.h"
+#include "../xmotion.h"
 #include "../../module/motion.h"
 #include "../../module/stepper.h"
 
@@ -183,13 +184,14 @@
  */
 void GcodeSuite::M114() {
 
-  #if ENABLED(M114_DETAIL)
+  /*#if ENABLED(M114_DETAIL)
     if (parser.seen('D')) {
       report_current_position_detail();
       return;
     }
-  #endif
+  #endif*/
 
   planner.synchronize();
-  report_current_position();
+    print_full_report = true;
+  //report_current_position();
 }
