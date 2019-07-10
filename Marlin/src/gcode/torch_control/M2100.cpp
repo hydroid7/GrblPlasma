@@ -30,15 +30,18 @@ void GcodeSuite::M2100() {
   SERIAL_EOL();
   const int retry = parser.intval('R', 4);
   SERIAL_ECHOPAIR("Retry: ", retry);
+  const int strike = parser.intval('X', 1);
+  SERIAL_ECHOPAIR("Strike Torch? (1 = yes, 0 = no): ", strike);
   SERIAL_EOL();
 
   for (int x = 0; x < retry; x++) //Retry 4 times
   {
     probe_z();
     inc_move_z_at_fixed_rate(0.1 + pierce_height, 30); //Floating head take-up + pirce_height
-    fire_torch();
+    if (strike == 1) fire_torch();
     delay(pierce_delay * 1000); //Delay for pierce
     inc_move_z_at_fixed_rate(cut_height - pierce_height, 30); //Move to cut height
+    if (strike == 0) break;
     if (READ(IN_1_PIN) == LOW)
     {
       break; //We have an ARC-OK signal!
