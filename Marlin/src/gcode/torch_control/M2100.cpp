@@ -30,7 +30,7 @@ void GcodeSuite::M2100() {
   SERIAL_EOL();
   const int retry = parser.intval('R', 4);
   SERIAL_ECHOPAIR("Retry: ", retry);
-  const int strike = parser.intval('X', 1);
+  const int strike = parser.intval('S', 1);
   SERIAL_ECHOPAIR("Strike Torch? (1 = yes, 0 = no): ", strike);
   SERIAL_EOL();
 

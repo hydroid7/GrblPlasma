@@ -29,6 +29,7 @@ float target_velocity; //Calculated by auto-report, required by AVTHC engine. Al
 Global Variables for AVTHC
 */
 float thc_arc_voltage;
+float last_thc_arc_voltage;
 float thc_set_voltage;
 float thc_velocity_tolorance = 5; //Must be within X inches/min to are target velocity before ATHC starts to comp Z height
 float thc_voltage_tolorance = 3; //If we are whithin X volts of our target voltage, don't make Z adjustments!
@@ -54,6 +55,7 @@ const float accel[] = DEFAULT_MAX_ACCELERATION;
 const float max_feedrate[] = DEFAULT_MAX_FEEDRATE;
 unsigned long report_timestamp = 0;
 unsigned long arc_voltage_timestamp = 0;
+unsigned long torch_fired_timestamp = 0;
 int has_printed_stop_report = 0;
 bool print_full_report = false;
 /**
@@ -63,15 +65,16 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 {
  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-const int numReadings = 100; //Number of readings to average from
+const int numReadings = 75; //Number of readings to average from
 float readings[numReadings];      // the readings from the analog input
 int readIndex = 0;              // the index of the current reading
 float total = 0;                  // the running total
 float average = 0;                // the average
 void pull_arc_reading()
 {
+ last_thc_arc_voltage = thc_arc_voltage;
  total = total - readings[readIndex];
- readings[readIndex] = analogRead(A21);
+ readings[readIndex] = (float)analogRead(A21);
  total = total + readings[readIndex];
  readIndex = readIndex + 1;
  if (readIndex >= numReadings) {
@@ -79,6 +82,10 @@ void pull_arc_reading()
  }
  float actual_voltage = mapfloat((total / numReadings), 0.00, 190.00, 0.00, 9.59); //Calibrated by hooking 9 volt battery to input. This input should be pretty close all the way to 18 volts
  thc_arc_voltage = actual_voltage * 50; //Scaled to 50:1
+ if (fabs(last_thc_arc_voltage - thc_arc_voltage) > 15) //Bad average
+ {
+   thc_arc_voltage = last_thc_arc_voltage;
+ }
 }
 void init_xmotion()
 {
@@ -130,7 +137,7 @@ bool IsInTolerance(float a, float b, float t)
 
 void tick_thc_engine()
 {
-  if (thc_enabled && thc_set_voltage > 30)
+  if (thc_enabled && thc_set_voltage > 30 && (millis() - torch_fired_timestamp) > 3000)
   {
     if (IsInTolerance(target_velocity, current_velocity, thc_velocity_tolorance)) //Check to see if we are within our velocity tolorance
     {
@@ -142,13 +149,28 @@ void tick_thc_engine()
         }
         else
         {
-          if (thc_set_voltage > thc_arc_voltage) //Jog Z positive
+          //Before we make an adjustment, check to see if Z probe has closed. If so we've detected a torch dive
+          //So disable THC and inc_move up until probe is open, then add 0.1875 to cut height to try and save the part
+          if (READ(Z_PROBE_PIN) == LOW)
           {
-            inc_move_z_at_fixed_rate(0.010, thc_comp_velocity);
+            for (int x = 0; x < 25; x++)
+            {
+              inc_move_z_at_fixed_rate(0.010, thc_comp_velocity);
+              if (READ(Z_PROBE_PIN) == HIGH) break;
+            }
+            inc_move_z_at_fixed_rate(0.175, thc_comp_velocity);
+            thc_enabled = false;
           }
-          else //Jog Z Negative
+          else
           {
-            inc_move_z_at_fixed_rate(-0.010, thc_comp_velocity);
+            if (thc_set_voltage > thc_arc_voltage) //Jog Z positive
+            {
+              inc_move_z_at_fixed_rate(0.010, thc_comp_velocity);
+            }
+            else //Jog Z Negative
+            {
+              inc_move_z_at_fixed_rate(-0.010, thc_comp_velocity);
+            }
           }
         }
       }
@@ -338,7 +360,7 @@ void tick_jog_engine()
 void tick_xmotion()
 {
   tick_jog_engine();
-  if (millis() > arc_voltage_timestamp + 10)
+  if (millis() > arc_voltage_timestamp + 30)
   {
     pull_arc_reading();
     arc_voltage_timestamp = millis();
@@ -462,6 +484,7 @@ void inc_move_z_at_fixed_rate(float distance, float feedrate)
 }*/
 void fire_torch()
 {
+  torch_fired_timestamp = millis();
   extDigitalWrite(SOL1_PIN, HIGH);
 }
 void extinguish_torch()
