@@ -29,10 +29,9 @@ float target_velocity; //Calculated by auto-report, required by AVTHC engine. Al
 Global Variables for AVTHC
 */
 float thc_arc_voltage;
-float last_thc_arc_voltage;
 float thc_set_voltage;
 float thc_velocity_tolorance = 5; //Must be within X inches/min to are target velocity before ATHC starts to comp Z height
-float thc_voltage_tolorance = 3; //If we are whithin X volts of our target voltage, don't make Z adjustments!
+float thc_voltage_tolorance = 1; //If we are whithin X volts of our target voltage, don't make Z adjustments!
 float thc_comp_velocity = 40; //IPM to make adjustments at.
 bool thc_enabled;
 
@@ -65,27 +64,22 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 {
  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-const int numReadings = 75; //Number of readings to average from
+const int numReadings = 20; //Number of readings to average from
 float readings[numReadings];      // the readings from the analog input
 int readIndex = 0;              // the index of the current reading
 float total = 0;                  // the running total
 float average = 0;                // the average
 void pull_arc_reading()
 {
- last_thc_arc_voltage = thc_arc_voltage;
  total = total - readings[readIndex];
- readings[readIndex] = (float)analogRead(A21);
+ readings[readIndex] = (float)analogRead(A20);
  total = total + readings[readIndex];
  readIndex = readIndex + 1;
  if (readIndex >= numReadings) {
    readIndex = 0;
  }
- float actual_voltage = mapfloat((total / numReadings), 0.00, 190.00, 0.00, 9.59); //Calibrated by hooking 9 volt battery to input. This input should be pretty close all the way to 18 volts
+ float actual_voltage = mapfloat((total / numReadings), 0.00, 299, 0.00, 3); //Calibrated by hooking 3 volt battery to input. This input should be pretty close all the way to 18 volts
  thc_arc_voltage = actual_voltage * 50; //Scaled to 50:1
- if (fabs(last_thc_arc_voltage - thc_arc_voltage) > 15) //Bad average
- {
-   thc_arc_voltage = last_thc_arc_voltage;
- }
 }
 void init_xmotion()
 {
@@ -137,7 +131,8 @@ bool IsInTolerance(float a, float b, float t)
 
 void tick_thc_engine()
 {
-  if (thc_enabled && thc_set_voltage > 30 && (millis() - torch_fired_timestamp) > 3000)
+  //if (thc_enabled && thc_set_voltage > 10 && (millis() - torch_fired_timestamp) > 3000)
+  if (thc_enabled && thc_set_voltage > 10)
   {
     if (IsInTolerance(target_velocity, current_velocity, thc_velocity_tolorance)) //Check to see if we are within our velocity tolorance
     {
@@ -165,11 +160,11 @@ void tick_thc_engine()
           {
             if (thc_set_voltage > thc_arc_voltage) //Jog Z positive
             {
-              inc_move_z_at_fixed_rate(0.010, thc_comp_velocity);
+              inc_move_z_at_fixed_rate(0.030, thc_comp_velocity);
             }
             else //Jog Z Negative
             {
-              inc_move_z_at_fixed_rate(-0.010, thc_comp_velocity);
+              inc_move_z_at_fixed_rate(-0.030, thc_comp_velocity);
             }
           }
         }
@@ -430,8 +425,8 @@ void tick_xmotion()
        SERIAL_EOL();
      }
    }
-   tick_thc_engine();
    report_timestamp = millis();
+   tick_thc_engine();
  }
  /***********************************************/
 }

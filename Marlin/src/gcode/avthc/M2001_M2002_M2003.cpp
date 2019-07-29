@@ -30,4 +30,6 @@ void GcodeSuite::M2003() {
   SERIAL_EOL();
   SERIAL_ECHOPAIR_F("Current Measured Arc Voltage is ", thc_arc_voltage, 2);
   SERIAL_EOL();
+  SERIAL_ECHOPAIR_F("Current Raw ADC value is ", (float)analogRead(A20), 2);
+  SERIAL_EOL();
 }

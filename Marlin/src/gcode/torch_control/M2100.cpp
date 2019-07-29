@@ -8,7 +8,7 @@ void probe_z()
 {
   while(READ(Z_PROBE_PIN) == HIGH)
   {
-    inc_move_z_at_fixed_rate(-0.010, 30);
+    inc_move_z_at_fixed_rate(-0.010, 60);
   }
 }
 void GcodeSuite::M2100() {

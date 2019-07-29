@@ -16,5 +16,5 @@ void GcodeSuite::M2101() {
 
   SERIAL_ECHOPAIR_F("Retract Height: ", retract_height, 2);
   SERIAL_EOL();
-  inc_move_z_at_fixed_rate(retract_height, 30); //Move to retract height!
+  inc_move_z_at_fixed_rate(retract_height, 60); //Move to retract height!
 }
