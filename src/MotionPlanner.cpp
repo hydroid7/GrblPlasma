@@ -18,14 +18,14 @@ void motion_timer_tick()
 
 MotionPlanner::MotionPlanner()
 {
-  _Step_Scale.x = 650;
-  _Step_Scale.y = 650;
+  _Step_Scale.x = 518;
+  _Step_Scale.y = 518;
 
   _Feed_Jerk.x = 0.05;
   _Feed_Jerk.y = 0.05;
 
-  _Feed_Accel.x = 2;
-  _Feed_Accel.y = 2;
+  _Feed_Accel.x = 7;
+  _Feed_Accel.y = 6;
 
   _Feed_Sample_Timestamp = 0; //This is in millis()
   _Feedrate_Timestamp = 0; //This is in micros()
@@ -104,7 +104,6 @@ bool MotionPlanner::push_target(XYZ_Double target)
 }
 void MotionPlanner::motion_calculate_ramp_map(int move_index, double x_dist_inches, double y_dist_inches)
 {
-  noInterrupts();
   if (MoveStack->peek(MoveStack, move_index) != NULL) //This element exists
   {
     struct Move_Data *move = (Move_Data*)MoveStack->peek(MoveStack, move_index);
@@ -141,7 +140,6 @@ void MotionPlanner::motion_calculate_ramp_map(int move_index, double x_dist_inch
       }
     }
   }
-  interrupts();
 }
 void MotionPlanner::motion_set_feedrate(double feed)
 {
