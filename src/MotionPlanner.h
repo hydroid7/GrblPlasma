@@ -9,7 +9,7 @@
 
 #define RAMP_MAP_SIZE 1000 //This gives us a resolution of 1000 feedrate changes on the ramp map
 #define MOVE_STACK_SIZE 50
-#define FEED_RAMP_SCALE 1000
+#define FEED_RAMP_SCALE 1000.0
 #define FEED_RAMP_UPDATE_INTERVAL 25 //This is in milliseconds
 
 struct XYZ_Long {
@@ -96,6 +96,7 @@ class MotionPlanner
     XYZ_Long CurrentPosition; //Holds the current position in step units
     XYZ_Long TargetPosition; //Holds the target position in step units
     XYZ_Double CurrentVelocity; //Stores velocity for each axis in inches/sec
+    double percentage_into_move; //This store the percentage complete through the current move, needs to be global in order to insert feedholds into ramp_map
 
     Move_Data CurrentMove; //Holds the current move that has been popped of the top of the move stack
     Bresenham_Data Motion;
@@ -140,6 +141,16 @@ class MotionPlanner
     exit_velocity  - the new exit velocity in units/sec
     */
     void motion_recalculate_ramp_map_for_exit(int move_index, double exit_velocity);
+
+    /*
+    Calculate a velocity map from zero to target volocity then back to zero in order of percentage complete through move.
+    Does not take next moves into consideration, motion_update_planner with overite part of these values later...
+
+    This would be exact stop mode
+
+    move_index - index of the move that we are currently calculating the ramp map for
+    */
+    void motion_calculate_ramp_map(int move_index, double x_dist_inches, double y_dist_inches);
 
     /*
       Code to step_x
