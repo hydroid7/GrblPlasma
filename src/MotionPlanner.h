@@ -25,13 +25,13 @@ struct XYZ_Double {
    double f;
 };
 struct Bresenham_Data {
-   int dx;
-   int dy;
+   long dx;
+   long dy;
    int sx;
    int sy;
    int err;
-   int x_stg;
-   int y_stg;
+   long x_stg;
+   long y_stg;
    bool run;
 };
 
@@ -97,6 +97,14 @@ class MotionPlanner
     XYZ_Long TargetPosition; //Holds the target position in step units
     XYZ_Double CurrentVelocity; //Stores velocity for each axis in inches/sec
 
+    Move_Data CurrentMove; //Holds the current move that has been popped of the top of the move stack
+    Bresenham_Data Motion;
+
+    /*
+      Sets the new target position. Reads CurrentMove to get X,Y target data and sets the breseham variables in Move
+    */
+    void motion_set_target();
+
     /*
       Calculates the feed delay required to throttle the bresehm loop to the desired feedrate
       Called by the motion interupt after calculating the move precentage.
@@ -132,6 +140,16 @@ class MotionPlanner
     exit_velocity  - the new exit velocity in units/sec
     */
     void motion_recalculate_ramp_map_for_exit(int move_index, double exit_velocity);
+
+    /*
+      Code to step_x
+    */
+    void motion_step_x(int dir);
+
+    /*
+      Code to step_y
+    */
+    void motion_step_y(int dir);
 
 
 

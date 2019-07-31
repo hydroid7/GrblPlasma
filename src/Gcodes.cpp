@@ -8,6 +8,11 @@
 SerialCommand sCmd;
 MotionPlanner motion;
 
+void position_report()
+{
+  XYZ_Double position = motion.get_current_position();
+  printf(Serial, "CurrentPosition: X: %0.4f Y: %.4f\n", position.x, position.y);
+}
 void hello()
 {
   printf(Serial, "Hello at: %d\n", millis());
@@ -74,7 +79,7 @@ void rapid_move()
   t.x = x;
   t.y = y;
   t.z = 0;
-  t.f = 30.0; //Rapid feedrate, units/min
+  t.f = 15.0; //Rapid feedrate, units/min
   motion.push_target(t);
 }
 
@@ -86,6 +91,7 @@ void gcodes_init()
   //All special command below here
   sCmd.addCommand("init", init);
   sCmd.addCommand("hello", hello);
+  sCmd.addCommand("?", position_report);
   sCmd.addCommand("dump_moves", dump_moves);
 
   //All Gcode commands below here
