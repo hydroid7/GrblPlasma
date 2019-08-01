@@ -131,7 +131,22 @@ class MotionPlanner
       Updates the previously calculated "exact stop" markers and updates them for continous motion
         - this should be called everytime a new target is pushed to the stack
     */
-    void motion_plan_moves_on_stack();
+    void motion_plan_moves_for_continuous_motion();
+
+    /*
+      Return a polar angle between two cartesion points
+    */
+    double motion_get_vector_angle(XYZ_Double p1, XYZ_Double p2);
+
+    /*
+      Return input radians in degrees
+    */
+    double to_degrees(double radians);
+
+    /*
+      Return input degrees in radians
+    */
+    double to_radians(double degrees);
 
     /*
       Return the distance required to accelerate to a target velocity. Assumes that motion starts at MIN_FEED_RATE

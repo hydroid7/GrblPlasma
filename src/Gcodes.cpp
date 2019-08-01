@@ -158,7 +158,7 @@ void line_move()
       f = atof(third_word);
     }
   }
-  printf(Serial, "Rapid move to X%.4f Y%.4f F%.4f\n", x, y, f);
+  printf(Serial, "line move to X%.4f Y%.4f F%.4f\n", x, y, f);
   XYZ_Double t;
   t.x = x;
   t.y = y;
