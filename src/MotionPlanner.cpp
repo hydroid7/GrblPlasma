@@ -218,18 +218,21 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
       this_target.y = this_move->target.y / _Step_Scale.y;
 
       double vector_polar_angle = motion_get_vector_angle(last_target, this_target);
-      //printf(Serial, "(continous motion)-> last_target: X%.4f Y%.4f, this_target: X%.4f Y%.4f, vector_polar_angle: %.4f\n", last_target.x, last_target.y, this_target.x, this_target.y, vector_polar_angle);
+      printf(Serial, "(continous motion)-> last_target: X%.4f Y%.4f, this_target: X%.4f Y%.4f, vector_polar_angle: %.4f\n", last_target.x, last_target.y, this_target.x, this_target.y, vector_polar_angle);
       double angle_of_change = abs(vector_polar_angle - last_vector_polar_angle);
+      printf(Serial, "Angle of change is: %.4f\n", angle_of_change);
       if (angle_of_change > 180) angle_of_change = 180;
       double exit_velocity = map(angle_of_change, 0, 180, (double)last_move->target.f / FEED_VALUE_SCALE, dominent_axis_jerk);
       if (exit_velocity < dominent_axis_jerk) exit_velocity = dominent_axis_jerk;
-      //printf(Serial, "New exit/entry velocity is: %.4f\n", exit_velocity);
+      printf(Serial, "New exit/entry velocity is: %.4f\n", exit_velocity);
 
       last_move->exit_velocity = exit_velocity;
       last_move->deccel_marker = motion_calculate_accel_marker(dominent_axis_accel, exit_velocity);
+      printf(Serial, "Last Move Decel Marker is: %.4f\n", last_move->deccel_marker);
 
       this_move->entry_velocity = exit_velocity;
       this_move->accel_marker = motion_calculate_accel_marker(dominent_axis_accel, exit_velocity);
+      printf(Serial, "This Move Accel Marker is: %.4f\n", this_move->accel_marker);
 
       last_vector_polar_angle = vector_polar_angle;
     }
