@@ -31,6 +31,10 @@ MotionPlanner::MotionPlanner()
   _Feedrate_Timestamp = 0; //This is in micros()
   _Feedrate_delay = 500 * 1000;
 }
+bool MotionPlanner::is_in_motion()
+{
+  return Motion.run;
+}
 void MotionPlanner::init()
 {
   CurrentMove.target.x = 0;
@@ -69,11 +73,30 @@ void MotionPlanner::init()
   }
 
 }
+XYZ_Double MotionPlanner::get_last_moves_target()
+{
+  XYZ_Double pos;
+  if (MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1) != NULL) //There moves on the stack
+  {
+      struct Move_Data *move = (Move_Data*)MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1);
+      pos.x = (double)move->target.x / (double)_Step_Scale.x;
+      pos.y = (double)move->target.y / (double)_Step_Scale.y;
+      pos.f = ((double)move->target.f / FEED_RAMP_SCALE) * 60;
+  }
+  else //There are no moves on the stack
+  {
+    pos.x = (double)CurrentMove.target.x / (double)_Step_Scale.x;
+    pos.y = (double)CurrentMove.target.y / (double)_Step_Scale.y;
+    pos.f = ((double)CurrentMove.target.f / FEED_RAMP_SCALE) * 60;
+  }
+  return pos;
+}
 XYZ_Double MotionPlanner::get_current_position()
 {
   XYZ_Double pos;
   pos.x = (double)CurrentPosition.x / (double)_Step_Scale.x;
   pos.y = (double)CurrentPosition.y / (double)_Step_Scale.y;
+  pos.f = sqrt(pow((CurrentVelocity.x), 2) + pow(CurrentVelocity.y, 2)) * 60;
   return pos;
 }
 bool MotionPlanner::push_target(XYZ_Double target)

@@ -5,6 +5,8 @@
 #include "RingBuf.h"
 #include "Gcodes.h"
 
+bool PendingOkay;
+
 SerialCommand sCmd;
 MotionPlanner motion;
 
@@ -43,7 +45,7 @@ void rapid_move()
   char *first_word, *second_word;
 
   //Need to default polulate this with the current MCS position once motion library is up and running
-  XYZ_Double current = motion.get_current_position();
+  XYZ_Double current = motion.get_last_moves_target();
   double x = current.x;
   double y = current.y;
 
@@ -82,6 +84,83 @@ void rapid_move()
   t.z = 0;
   t.f = 350.0; //Rapid feedrate, units/min
   motion.push_target(t);
+  PendingOkay = true;
+}
+void line_move()
+{
+  char *first_word, *second_word, *third_word;
+
+  //Need to default polulate this with the current MCS position once motion library is up and running
+  XYZ_Double current = motion.get_last_moves_target();
+  double x = current.x;
+  double y = current.y;
+  double f = current.f;
+
+  first_word = sCmd.next();
+  if (first_word != NULL)
+  {
+    if (first_word[0] == 'X')
+    {
+      first_word[0] = ' ';
+      x = atof(first_word);
+    }
+    else if (first_word[0] == 'Y')
+    {
+      first_word[0] = ' ';
+      y = atof(first_word);
+    }
+    else if (first_word[0] == 'F')
+    {
+      first_word[0] = ' ';
+      f = atof(first_word);
+    }
+  }
+  second_word = sCmd.next();
+  if (second_word != NULL)
+  {
+    if (second_word[0] == 'X')
+    {
+      second_word[0] = ' ';
+      x = atof(second_word);
+    }
+    else if (second_word[0] == 'Y')
+    {
+      second_word[0] = ' ';
+      y = atof(second_word);
+    }
+    else if (first_word[0] == 'F')
+    {
+      second_word[0] = ' ';
+      f = atof(first_word);
+    }
+  }
+  third_word = sCmd.next();
+  if (third_word != NULL)
+  {
+    if (third_word[0] == 'X')
+    {
+      third_word[0] = ' ';
+      x = atof(third_word);
+    }
+    else if (third_word[0] == 'Y')
+    {
+      third_word[0] = ' ';
+      y = atof(third_word);
+    }
+    else if (third_word[0] == 'F')
+    {
+      third_word[0] = ' ';
+      f = atof(third_word);
+    }
+  }
+  printf(Serial, "Rapid move to X%.4f Y%.4f F%.4f\n", x, y, f);
+  XYZ_Double t;
+  t.x = x;
+  t.y = y;
+  t.z = 0;
+  t.f = f; //Rapid feedrate, units/min
+  motion.push_target(t);
+  PendingOkay = true;
 }
 
 /* End Gcode functions before here */
@@ -97,8 +176,16 @@ void gcodes_init()
 
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);
+  sCmd.addCommand("G1", line_move);
+
+  PendingOkay = false;
 }
 void gcodes_tick()
 {
+  if (PendingOkay == true && MoveStack->isFull(MoveStack) == false)
+  {
+    PendingOkay = false;
+    printf(Serial, "ok\n"); //Send an okay once there is room in the stack!
+  }
   sCmd.readSerial();
 }

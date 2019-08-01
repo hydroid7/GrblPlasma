@@ -32,9 +32,11 @@ extern "C" {
      _obj_.print(_pf_buffer_);                                    \
    }while(0)
 /**********************
- *      TYPEDEFS
+ *      GLOBALS
  **********************/
 extern MotionPlanner motion;
+extern bool OkayFlag;
+
 
 /**********************
  * GLOBAL PROTOTYPES

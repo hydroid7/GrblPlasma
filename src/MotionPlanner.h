@@ -8,7 +8,7 @@
 #include "RingBuf.h"
 
 #define RAMP_MAP_SIZE 1000 //This gives us a resolution of 1000 feedrate changes on the ramp map
-#define MOVE_STACK_SIZE 50
+#define MOVE_STACK_SIZE 30
 #define FEED_RAMP_SCALE 1000.0
 #define FEED_RAMP_UPDATE_INTERVAL 25 //This is in milliseconds
 
@@ -71,13 +71,23 @@ class MotionPlanner
     XYZ_Double get_current_position();
 
     /*
+      Returns a XYZ_Double with the target position of the last move on the stack
+    */
+    XYZ_Double get_last_moves_target();
+
+    /*
       Returns a XYZ_Double with current axis velocities
       f will be cartesion velocity
     */
     XYZ_Double get_current_velocity();
 
     /*
-      This is called by an interupt timer. Handles all syncronized motion
+      Return whether or not we are in motion
+    */
+    bool is_in_motion();
+
+    /*
+      This is called by an interupt timer. Handles all syncronized motion. Not meant to be user callable but needs to be public so ISR can reference it
     */
     void motion_tick();
 
