@@ -97,10 +97,7 @@ bool MotionPlanner::push_target(XYZ_Double target)
     that on an initial move, motion will start at that initial rate until the ramp_map is populated
     */
     int move_index = MoveStack->add(MoveStack, &move);
-    if (move_index == 1) //If we are the first move on the stack, make sure we calculate the ramp_map before we start motion otherwise motion could outrun the calculated values on small moves
-    {
-      Motion.run = false; //Don't let motion start
-    }
+    //If we are the first move on the stack, make sure we calculate the ramp_map before we start motion otherwise motion could outrun the calculated values on small moves
     XYZ_Double current_position = get_current_position(); //Get current position so we can calculate the move distance from new target
     motion_calculate_ramp_map(move_index, fabs(current_position.x - target.x), fabs(current_position.y - target.y));
     Motion.run = true; //Start motion after the ramp map has been calculated
@@ -224,7 +221,7 @@ void MotionPlanner::motion_tick()
         {
           CurrentVelocity.x = 0;
           CurrentVelocity.y = 0;
-          //Motion.run = false;
+          Motion.run = false;
         }
       }
       _Feedrate_Timestamp = micros();
