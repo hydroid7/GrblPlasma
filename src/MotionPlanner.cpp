@@ -205,10 +205,12 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
       double dominent_axis_accel = _Feed_Accel.x;
       double x_dist_inches = abs(last_move->target.x - this_move->target.x) / _Step_Scale.x;
       double y_dist_inches = abs(last_move->target.y - this_move->target.y) / _Step_Scale.y;
+      double dominent_axis_dist = x_dist_inches;
       if (y_dist_inches > x_dist_inches)
       {
         dominent_axis_jerk = _Feed_Jerk.y;
         dominent_axis_accel = _Feed_Accel.y;
+        dominent_axis_dist = y_dist_inches;
       }
       XYZ_Double last_target;
       last_target.x = last_move->target.x / _Step_Scale.x;
@@ -226,12 +228,16 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
       if (exit_velocity < dominent_axis_jerk) exit_velocity = dominent_axis_jerk;
       printf(Serial, "New exit/entry velocity is: %.4f\n", exit_velocity);
 
+      double peak_velocity = motion_calculate_feed_from_distance(dominent_axis_accel, dominent_axis_dist / 2.0);
+      if (peak_velocity > ((double)last_move->target.f / FEED_VALUE_SCALE)) peak_velocity = ((double)last_move->target.f / FEED_VALUE_SCALE);
+      printf(Serial, "Peak Velocity is: %.4f\n", peak_velocity);
+
       last_move->exit_velocity = exit_velocity;
-      last_move->deccel_marker = motion_calculate_accel_marker(dominent_axis_accel, exit_velocity);
+      last_move->deccel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
       printf(Serial, "Last Move Decel Marker is: %.4f\n", last_move->deccel_marker);
 
       this_move->entry_velocity = exit_velocity;
-      this_move->accel_marker = motion_calculate_accel_marker(dominent_axis_accel, exit_velocity);
+      this_move->accel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
       printf(Serial, "This Move Accel Marker is: %.4f\n", this_move->accel_marker);
 
       last_vector_polar_angle = vector_polar_angle;
