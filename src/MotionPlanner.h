@@ -7,9 +7,8 @@
 #include "Arduino.h"
 #include "RingBuf.h"
 
-#define RAMP_MAP_SIZE 4000 //This gives us a resolution of 1000 feedrate changes on the ramp map
 #define MOVE_STACK_SIZE 6
-#define FEED_RAMP_SCALE 1000.0
+#define FEED_VALUE_SCALE 1000.0
 #define FEED_RAMP_UPDATE_INTERVAL 10 //This is in milliseconds
 
 struct XYZ_Long {
@@ -38,12 +37,16 @@ struct Bresenham_Data {
 struct Move_Data {
    XYZ_Long target;
    /*
-    Functions that need use the ramp_map need to remember that the feedramp values are scaled by FEED_RAMP_SCALE to avoid storing floats
-    unsigned int can store a value betwee 0 and 65,535 and store a feedrate from 0-3,932.1 units/sec with a FEED_RAMP_SCALE of 1000
-    Storing 1000 float would be 32000 bits
-    Storing 1000 int is 16000 bits, half the size per element and can still store a feedrate over 1000
-  */
-   unsigned int ramp_map[RAMP_MAP_SIZE];
+    Use distance markers to deterine when acceleration/decceleration need to begin
+   */
+   double accel_marker;
+   double deccel_marker;
+   /*
+    Keep track of the entry and exit velocitys. They should be set to the minimum feedrate, and markers should be caclulated to reflect this.
+    When the planner re-calculates for continnous motion, the entry and exit velocities need to be updates and the markers do as well!
+   */
+   double entry_velocity; //units/sec
+   double exit_velocity; //units/sec
 };
 extern RingBuf *MoveStack;
 
@@ -125,43 +128,26 @@ class MotionPlanner
     void motion_set_feedrate(double feed);
 
     /*
-      Updates the previously calculated "exact stop" feed ramps and updates them for continous motion
-      Uses a mapped differental to determine the exit_velocity based on the vector angle change of the moves,
-      so slight angle changes only warrent a small change in velocity and large angle changes warrent a large
-      deccel before the change happens
-
+      Updates the previously calculated "exact stop" markers and updates them for continous motion
         - this should be called everytime a new target is pushed to the stack
     */
     void motion_plan_moves_on_stack();
 
     /*
-      This modifies the entry ramp of a move to reflect a new entry velocity
+      Return the distance required to accelerate to a target velocity. Assumes that motion starts at MIN_FEED_RATE
 
-        - this should only be called by motion_plan_moves_on_stack()
-      move_index - is the index position on the target stack that contains the ramp that needs to be updated
-      entry_velocity  - the new entry velocity in units/sec
+      accel_rate - Acceleration rate in units/sec
+      target_velocity - Target velocity in units/sec
     */
-    void motion_recalculate_ramp_map_for_entry(int move_index, double entry_velocity);
+    double motion_calculate_accel_marker(double accel_rate, double target_velocity);
 
     /*
-      This modifies the exit ramp of a move to reflect a new exit velocity
+      Return the feedrate at a specific distance into move
 
-        - this should only be called by motion_plan_moves_on_stack()
-    move_index - is the index position on the target stack that contains the ramp that needs to be updated
-    exit_velocity  - the new exit velocity in units/sec
+      accel_rate - Acceleration rate in units/sec
+      distance_into_move - how far have we traveled into the move in scaled units. This should be the distance the dominant axis has traveled
     */
-    void motion_recalculate_ramp_map_for_exit(int move_index, double exit_velocity);
-
-    /*
-    Calculate a velocity map from zero to target volocity then back to zero in order of percentage complete through move.
-    Does not take next moves into consideration, motion_update_planner with overite part of these values later...
-
-    This would be exact stop mode
-
-    unsigned int ramp_map[RAMP_MAP_SIZE] - the ramp_map array that the values will be stored in
-    target_velocity - in units/sec
-    */
-    void motion_calculate_ramp_map(unsigned int ramp_map[RAMP_MAP_SIZE], double x_dist_inches, double y_dist_inches, double target_velocity);
+    double motion_calculate_feed_from_distance(double accel_rate, double distance_into_move);
 
     /*
       Code to step_x

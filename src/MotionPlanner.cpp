@@ -81,13 +81,13 @@ XYZ_Double MotionPlanner::get_last_moves_target()
       struct Move_Data *move = (Move_Data*)MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1);
       pos.x = (double)move->target.x / (double)_Step_Scale.x;
       pos.y = (double)move->target.y / (double)_Step_Scale.y;
-      pos.f = ((double)move->target.f / FEED_RAMP_SCALE) * 60;
+      pos.f = ((double)move->target.f / FEED_VALUE_SCALE) * 60;
   }
   else //There are no moves on the stack
   {
     pos.x = (double)CurrentMove.target.x / (double)_Step_Scale.x;
     pos.y = (double)CurrentMove.target.y / (double)_Step_Scale.y;
-    pos.f = ((double)CurrentMove.target.f / FEED_RAMP_SCALE) * 60;
+    pos.f = ((double)CurrentMove.target.f / FEED_VALUE_SCALE) * 60;
   }
   return pos;
 }
@@ -113,53 +113,23 @@ bool MotionPlanner::push_target(XYZ_Double target)
     move.target.x = target.x * _Step_Scale.x;
     move.target.y = target.y * _Step_Scale.y;
     move.target.z = 0; //Right now we only need XY for plasma cutting, we'll add in more axis later
-    move.target.f = (target.f * 0.0166666) * FEED_RAMP_SCALE;
+    move.target.f = (target.f * 0.0166666) * FEED_VALUE_SCALE;
 
     //If we are the first move on the stack, make sure we calculate the ramp_map before we start motion otherwise motion could outrun the calculated values on small moves
-    XYZ_Double current_position = get_current_position(); //Get current position so we can calculate the move distance from new target
-    motion_calculate_ramp_map(move.ramp_map, fabs(current_position.x - target.x), fabs(current_position.y - target.y), (double)move.target.f / FEED_RAMP_SCALE);
+    XYZ_Double current_position = get_last_moves_target();
+    double dominant_accel = _Feed_Accel.x; //Assume X is dominant
+    if (abs(target.y - current_position.y) > abs(target.x - current_position.x)) dominant_accel = _Feed_Accel.y; //Y axis is the dominant axis, use it's accel
+    move.accel_marker = motion_calculate_accel_marker(dominant_accel, (target.f * 0.0166666)); //We should not be accelerating after this marker compared to distance in.
+    move.deccel_marker = motion_calculate_accel_marker(dominant_accel, (target.f * 0.0166666)); //We should not be accelerating after this marker compared to distance left.
+    move.entry_velocity = MIN_FEED_RATE;
+    move.exit_velocity = MIN_FEED_RATE;
     int move_index = MoveStack->add(MoveStack, &move); //Push the move to the stack!
     if (Motion.run == false) //If we are not currently in motion, set our feedrate to min feed
     {
-      motion_set_feedrate(0.016); //Minimum feed of 1 inch/min
+      motion_set_feedrate(move.entry_velocity); //Minimum feed of 1 inch/min
     }
     Motion.run = true; //Start motion after the ramp map has been calculated
     return true;
-  }
-}
-void MotionPlanner::motion_calculate_ramp_map(unsigned int ramp_map[RAMP_MAP_SIZE], double x_dist_inches, double y_dist_inches, double target_velocity)
-{
-  if (x_dist_inches == 0 && y_dist_inches == 0) return; //Don't calculate a move with zero cartesion distance!
-  double cartesion_distance = sqrt(pow((x_dist_inches), 2) + pow(y_dist_inches, 2)); //How far is are move?
-
-  double dominent_axis_accel = _Feed_Accel.x; //Assume X then update to Y if its the dominent axis
-  if (y_dist_inches > x_dist_inches) dominent_axis_accel = _Feed_Accel.y;
-  double dominent_axis_jerk = _Feed_Jerk.x; //Assume X then update to Y if its the dominent axis
-  if (y_dist_inches > x_dist_inches) dominent_axis_jerk = _Feed_Jerk.y;
-  int map_index = 0;
-  for (double x = 0; x < RAMP_MAP_SIZE; x++) //Plot a feedrate value for each RAMP_MAP slot
-  {
-    double distance_in = map(x, 0.0, (double)RAMP_MAP_SIZE-1, 0.0, cartesion_distance);
-    //printf(Serial, "Distance into move: %.4f, Total Distance = %.4f\n", distance_in, cartesion_distance);
-    double distance_left = cartesion_distance - distance_in;
-    if (distance_in < (cartesion_distance / 2.0)) //If we are less that half way through the move, only worry about acceleration
-    {
-      double accel_time = sqrt((0.5 * dominent_axis_accel) * distance_in) * (1.0/(0.5 * dominent_axis_accel));
-      double velocity_at_this_percentage = dominent_axis_accel * accel_time;
-      if (velocity_at_this_percentage > target_velocity) velocity_at_this_percentage = target_velocity; //cap velocity at the target feedrate;
-      if (velocity_at_this_percentage < dominent_axis_jerk) velocity_at_this_percentage = dominent_axis_jerk;
-      //printf(Serial, "Accelerating [%d] = %.4f\n", map_index, velocity_at_this_percentage * FEED_RAMP_SCALE);
-      if (map_index < RAMP_MAP_SIZE) ramp_map[map_index++] = velocity_at_this_percentage * FEED_RAMP_SCALE;
-    }
-    else //We need to start thinking about how much distance is required to decelerate from our current velocity to a stop
-    {
-      double accel_time = sqrt((0.5 * dominent_axis_accel) * distance_left) * (1.0/(0.5 * dominent_axis_accel));
-      double velocity_at_this_percentage = dominent_axis_accel * accel_time;
-      if (velocity_at_this_percentage > target_velocity) velocity_at_this_percentage = target_velocity; //cap velocity at the target feedrate;
-      //if (velocity_at_this_percentage < dominent_axis_jerk) velocity_at_this_percentage = dominent_axis_jerk; //Make sure feedrate doesn't go below the dominent_axis_jerk
-      printf(Serial, "Deccelerating [%d] = %.4f\n", map_index, velocity_at_this_percentage * FEED_RAMP_SCALE);
-      if (map_index < RAMP_MAP_SIZE) ramp_map[map_index++] = velocity_at_this_percentage * FEED_RAMP_SCALE;
-    }
   }
 }
 void MotionPlanner::motion_set_feedrate(double feed)
@@ -198,6 +168,16 @@ void MotionPlanner::motion_set_target()
   Motion.x_stg = abs(Motion.dx);
   Motion.y_stg = abs(Motion.dy);
 }
+double MotionPlanner::motion_calculate_accel_marker(double accel_rate, double target_velocity)
+{
+  double seconds_to_target = (target_velocity - MIN_FEED_RATE) / accel_rate;
+  return (MIN_FEED_RATE * seconds_to_target) + (0.5 * accel_rate * pow(seconds_to_target, 2));
+}
+double MotionPlanner::motion_calculate_feed_from_distance(double accel_rate, double distance_into_move)
+{
+  double accel_time = sqrt((0.5 * accel_rate) * distance_into_move) * (1.0/(0.5 * accel_rate));
+  return (accel_rate * accel_time);
+}
 void MotionPlanner::motion_tick()
 {
   noInterrupts();
@@ -205,22 +185,42 @@ void MotionPlanner::motion_tick()
   {
     if (millis() > _Feed_Sample_Timestamp + FEED_RAMP_UPDATE_INTERVAL)
     {
+      double dominent_axis_distance = Motion.dx;
       double dominent_axis_stg = Motion.x_stg;
+      double dominent_axis_scale = _Step_Scale.x;
+      double dominent_axis_accel = _Feed_Accel.x;
       if (Motion.dy > Motion.dx)
       {
+        dominent_axis_distance = Motion.dy;
         dominent_axis_stg = Motion.y_stg;
+        dominent_axis_scale = _Step_Scale.y;
+        dominent_axis_accel = _Feed_Accel.y;
       }
       if (dominent_axis_stg > 0)
       {
-        double distance_left = sqrt(pow((Motion.x_stg / _Step_Scale.x), 2) + pow((Motion.y_stg / _Step_Scale.y), 2));
-        double cartesion_distance = sqrt(pow((Motion.dx / _Step_Scale.x), 2) + pow((Motion.dy / _Step_Scale.y), 2));
-        double distance_in = cartesion_distance - distance_left;
-        percentage_into_move = map(distance_in, 0.0, cartesion_distance, 0, RAMP_MAP_SIZE);
-        if (percentage_into_move > RAMP_MAP_SIZE-1) percentage_into_move = RAMP_MAP_SIZE-1;
-        double new_feed_rate = (double)CurrentMove.ramp_map[(int)percentage_into_move] / FEED_RAMP_SCALE;
-        //printf(Serial, "Move Percentage: %.4f, feedrate = %.4f\n", percentage_into_move, new_feed_rate);
-        motion_set_feedrate(new_feed_rate);
-        //get_current_velocity();
+        double distance_left = dominent_axis_stg / dominent_axis_scale;
+        double distance_in = (dominent_axis_distance / dominent_axis_scale) - distance_left;
+        //printf(Serial, "Distance in: %.4f, Distance Left: %.4f\n", distance_in, distance_left);
+        /*
+          Use our distance in to deterine which marker we should be using. If accelerating or deccelerating, calculate that value and call motion_set_feedrate
+        */
+        double new_feed_rate;
+        bool changed = false;
+        if (distance_in < CurrentMove.accel_marker) //We should be accelerating
+        {
+          new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, distance_in);
+          changed = true;
+        }
+        if (distance_left < CurrentMove.deccel_marker) //We should be deccelerating
+        {
+          new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, distance_left);
+          changed = true;
+        }
+        if (changed)
+        {
+          //printf(Serial, "New feedrate: %.4f\n", new_feed_rate);
+          motion_set_feedrate(new_feed_rate);
+        }
       }
       _Feed_Sample_Timestamp = millis();
     }
