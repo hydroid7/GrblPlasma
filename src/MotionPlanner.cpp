@@ -184,64 +184,66 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
     Iterate through the moves and comparee this move to last move
     calculate a new exit velocity based on the polar angle of change
   */
-  double last_vector_polar_angle = 0;
-  for (int x = 0; x < MoveStack->numElements(MoveStack); x++)
+  if (MoveStack->numElements(MoveStack) < 2) return; //Has to be at least two moves on the stack!
+  for (int x = 0; x < MoveStack->numElements(MoveStack) - 1; x++) //-1 one so that next_move always exists
   {
-    if (MoveStack->peek(MoveStack, x) != NULL) //This element exists
+    struct Move_Data *last_move;
+    struct Move_Data *this_move;
+    struct Move_Data *next_move;
+    if (x == 0) //Last move is the current move that's executing
     {
-      struct Move_Data *last_move;
-      struct Move_Data *this_move;
-      if (x == 0) //Last move is the current move that's executing
-      {
-        last_move = &CurrentMove;
-        this_move = (Move_Data*)MoveStack->peek(MoveStack, x);
-      }
-      else
-      {
-        last_move = (Move_Data*)MoveStack->peek(MoveStack, x-1);
-        this_move = (Move_Data*)MoveStack->peek(MoveStack, x);
-      }
-      double dominent_axis_jerk = _Feed_Jerk.x; //Assume X then update to Y if its the dominent axis
-      double dominent_axis_accel = _Feed_Accel.x;
-      double x_dist_inches = abs(last_move->target.x - this_move->target.x) / _Step_Scale.x;
-      double y_dist_inches = abs(last_move->target.y - this_move->target.y) / _Step_Scale.y;
-      double dominent_axis_dist = x_dist_inches;
-      if (y_dist_inches > x_dist_inches)
-      {
-        dominent_axis_jerk = _Feed_Jerk.y;
-        dominent_axis_accel = _Feed_Accel.y;
-        dominent_axis_dist = y_dist_inches;
-      }
-      XYZ_Double last_target;
-      last_target.x = last_move->target.x / _Step_Scale.x;
-      last_target.y = last_move->target.y / _Step_Scale.y;
-      XYZ_Double this_target;
-      this_target.x = this_move->target.x / _Step_Scale.x;
-      this_target.y = this_move->target.y / _Step_Scale.y;
-
-      double vector_polar_angle = motion_get_vector_angle(last_target, this_target);
-      printf(Serial, "(continous motion)-> last_target: X%.4f Y%.4f, this_target: X%.4f Y%.4f, vector_polar_angle: %.4f\n", last_target.x, last_target.y, this_target.x, this_target.y, vector_polar_angle);
-      double angle_of_change = abs(vector_polar_angle - last_vector_polar_angle);
-      printf(Serial, "Angle of change is: %.4f\n", angle_of_change);
-      if (angle_of_change > 180) angle_of_change = 180;
-      double exit_velocity = map(angle_of_change, 0, 180, (double)last_move->target.f / FEED_VALUE_SCALE, dominent_axis_jerk);
-      if (exit_velocity < dominent_axis_jerk) exit_velocity = dominent_axis_jerk;
-      printf(Serial, "New exit/entry velocity is: %.4f\n", exit_velocity);
-
-      double peak_velocity = motion_calculate_feed_from_distance(dominent_axis_accel, dominent_axis_dist / 2.0);
-      if (peak_velocity > ((double)last_move->target.f / FEED_VALUE_SCALE)) peak_velocity = ((double)last_move->target.f / FEED_VALUE_SCALE);
-      printf(Serial, "Peak Velocity is: %.4f\n", peak_velocity);
-
-      last_move->exit_velocity = exit_velocity;
-      last_move->deccel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
-      printf(Serial, "Last Move Decel Marker is: %.4f\n", last_move->deccel_marker);
-
-      this_move->entry_velocity = exit_velocity;
-      this_move->accel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
-      printf(Serial, "This Move Accel Marker is: %.4f\n", this_move->accel_marker);
-
-      last_vector_polar_angle = vector_polar_angle;
+      last_move = &CurrentMove;
+      this_move = (Move_Data*)MoveStack->peek(MoveStack, x);
+      next_move = (Move_Data*)MoveStack->peek(MoveStack, x + 1);
     }
+    else
+    {
+      last_move = (Move_Data*)MoveStack->peek(MoveStack, x-1);
+      this_move = (Move_Data*)MoveStack->peek(MoveStack, x);
+      next_move = (Move_Data*)MoveStack->peek(MoveStack, x + 1);
+    }
+    double dominent_axis_jerk = _Feed_Jerk.x; //Assume X then update to Y if its the dominent axis
+    double dominent_axis_accel = _Feed_Accel.x;
+    double x_dist_inches = abs(last_move->target.x - this_move->target.x) / _Step_Scale.x;
+    double y_dist_inches = abs(last_move->target.y - this_move->target.y) / _Step_Scale.y;
+    double dominent_axis_dist = x_dist_inches;
+    if (y_dist_inches > x_dist_inches)
+    {
+      dominent_axis_jerk = _Feed_Jerk.y;
+      dominent_axis_accel = _Feed_Accel.y;
+      dominent_axis_dist = y_dist_inches;
+    }
+    XYZ_Double last_target;
+    last_target.x = last_move->target.x / _Step_Scale.x;
+    last_target.y = last_move->target.y / _Step_Scale.y;
+    XYZ_Double this_target;
+    this_target.x = this_move->target.x / _Step_Scale.x;
+    this_target.y = this_move->target.y / _Step_Scale.y;
+    XYZ_Double next_target;
+    next_target.x = next_move->target.x / _Step_Scale.x;
+    next_target.y = next_move->target.y / _Step_Scale.y;
+
+    printf(Serial, "(continous motion)-> last_target: X%.4f Y%.4f, this_target: X%.4f Y%.4f, next_target: X%.4f Y%.4f\n", last_target.x, last_target.y, this_target.x, this_target.y, next_target.x, next_target.y);
+
+    double angle_of_change = motion_get_relative_angle_between_vectors(last_target, this_target, this_target, next_target);
+
+    printf(Serial, "Angle of change is: %.4f\n", angle_of_change);
+    if (angle_of_change > 180) angle_of_change = 180;
+    double exit_velocity = map(angle_of_change, 0, 180, (double)last_move->target.f / FEED_VALUE_SCALE, dominent_axis_jerk);
+    if (exit_velocity < dominent_axis_jerk) exit_velocity = dominent_axis_jerk;
+    printf(Serial, "New exit/entry velocity is: %.4f\n", exit_velocity);
+
+    double peak_velocity = motion_calculate_feed_from_distance(dominent_axis_accel, dominent_axis_dist / 2.0);
+    if (peak_velocity > ((double)last_move->target.f / FEED_VALUE_SCALE)) peak_velocity = ((double)last_move->target.f / FEED_VALUE_SCALE);
+    printf(Serial, "Peak Velocity is: %.4f\n", peak_velocity);
+
+    last_move->exit_velocity = exit_velocity;
+    last_move->deccel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
+    printf(Serial, "Last Move Decel Marker is: %.4f\n", last_move->deccel_marker);
+
+    this_move->entry_velocity = exit_velocity;
+    this_move->accel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
+    printf(Serial, "This Move Accel Marker is: %.4f\n", this_move->accel_marker);
   }
 }
 void MotionPlanner::motion_tick()
@@ -328,6 +330,13 @@ double MotionPlanner::motion_get_vector_angle(XYZ_Double p1, XYZ_Double p2)
   double angle = to_degrees(atan2(p1.y - p2.y, p1.x - p2.x));
   angle += 180;
   if (angle >= 360) angle -= 360;
+  return angle;
+}
+double MotionPlanner::motion_get_relative_angle_between_vectors(XYZ_Double l1p1, XYZ_Double l1p2, XYZ_Double l2p1, XYZ_Double l2p2)
+{
+  double slope1 = l1p1.y - l1p2.y / l1p1.x - l1p2.x;
+  double slope2 = l2p1.y - l2p2.y / l2p1.x - l2p2.x;
+  double angle = atan((slope1 - slope2) / (1 - (slope1 * slope2)));
   return angle;
 }
 double MotionPlanner::to_degrees(double radians)

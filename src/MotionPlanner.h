@@ -139,6 +139,11 @@ class MotionPlanner
     double motion_get_vector_angle(XYZ_Double p1, XYZ_Double p2);
 
     /*
+      Return a relative angle between two vectors
+    */
+    double motion_get_relative_angle_between_vectors(XYZ_Double l1p1, XYZ_Double l1p2, XYZ_Double l2p1, XYZ_Double l2p2);
+
+    /*
       Return input radians in degrees
     */
     double to_degrees(double radians);
