@@ -92,59 +92,44 @@ bool MotionPlanner::push_target(XYZ_Double target)
     move.target.z = 0; //Right now we only need XY for plasma cutting, we'll add in more axis later
     move.target.f = (target.f * 0.0166666) * FEED_RAMP_SCALE;
 
-    /*
-    The index where the move was added is returned and fed to motion_calculate_ramp_map, ramp_maps should always be populated with a minimum rate so
-    that on an initial move, motion will start at that initial rate until the ramp_map is populated
-    */
-    int move_index = MoveStack->add(MoveStack, &move);
     //If we are the first move on the stack, make sure we calculate the ramp_map before we start motion otherwise motion could outrun the calculated values on small moves
     XYZ_Double current_position = get_current_position(); //Get current position so we can calculate the move distance from new target
-    motion_calculate_ramp_map(move_index, fabs(current_position.x - target.x), fabs(current_position.y - target.y));
+    motion_calculate_ramp_map(move.ramp_map, fabs(current_position.x - target.x), fabs(current_position.y - target.y), (double)move.target.f / FEED_RAMP_SCALE);
+    int move_index = MoveStack->add(MoveStack, &move); //Push the move to the stack!
     Motion.run = true; //Start motion after the ramp map has been calculated
     return true;
   }
 }
-void MotionPlanner::motion_calculate_ramp_map(int move_index, double x_dist_inches, double y_dist_inches)
+void MotionPlanner::motion_calculate_ramp_map(unsigned int ramp_map[RAMP_MAP_SIZE], double x_dist_inches, double y_dist_inches, double target_velocity)
 {
-  if (MoveStack->peek(MoveStack, move_index) != NULL) //This element exists
+  if (x_dist_inches == 0 && y_dist_inches == 0) return; //Don't calculate a move with zero cartesion distance!
+  double cartesion_distance = sqrt(pow((x_dist_inches), 2) + pow(y_dist_inches, 2));
+
+  double dominent_axis_accel = _Feed_Accel.x; //Assume X then update to Y if its the dominent axis
+  if (y_dist_inches > x_dist_inches) dominent_axis_accel = _Feed_Accel.y;
+  double dominent_axis_jerk = _Feed_Jerk.x; //Assume X then update to Y if its the dominent axis
+  if (y_dist_inches > x_dist_inches) dominent_axis_jerk = _Feed_Jerk.y;
+  int map_index = 0;
+  for (double percentage = 0; percentage < 100; percentage+=0.1) //Plot a feedrate value for each whole percentage
   {
-    struct Move_Data *move = (Move_Data*)MoveStack->peek(MoveStack, move_index);
-
-    if (x_dist_inches == 0 && y_dist_inches == 0) return; //Don't calculate a move with zero cartesion distance!
-
-    double target_velocity = move->target.f / FEED_RAMP_SCALE;
-    double cartesion_distance = sqrt(pow((x_dist_inches), 2) + pow(y_dist_inches, 2));
-
-    double dominent_axis_accel = _Feed_Accel.x; //Assume X then update to Y if its the dominent axis
-    if (y_dist_inches > x_dist_inches) dominent_axis_accel = _Feed_Accel.y;
-    double dominent_axis_jerk = _Feed_Jerk.x; //Assume X then update to Y if its the dominent axis
-    if (y_dist_inches > x_dist_inches) dominent_axis_jerk = _Feed_Jerk.y;
-    int map_index = 0;
-    for (double percentage = 0; percentage < 100; percentage+=0.1) //Plot a feedrate value for each whole percentage
+    double distance_in = cartesion_distance * (percentage / 100);
+    double distance_left = cartesion_distance - distance_in;
+    if (percentage < 50) //If we are less that half way through the move, only worry about acceleration
     {
-      double distance_in = cartesion_distance * (percentage / 100);
-      double distance_left = cartesion_distance - distance_in;
-      if (percentage < 50) //If we are less that half way through the move, only worry about acceleration
-      {
-        double accel_time = sqrt((0.5 * dominent_axis_accel) * distance_in) * (1.0/(0.5 * dominent_axis_accel));
-        double velocity_at_this_percentage = dominent_axis_accel * accel_time;
-        if (velocity_at_this_percentage > target_velocity) velocity_at_this_percentage = target_velocity; //cap velocity at the target feedrate;
-        if (velocity_at_this_percentage < dominent_axis_jerk) velocity_at_this_percentage = dominent_axis_jerk;
-        if (map_index < RAMP_MAP_SIZE) move->ramp_map[map_index++] = velocity_at_this_percentage * FEED_RAMP_SCALE;
-      }
-      else //We need to start thinking about how much distance is required to decelerate from our current velocity to a stop
-      {
-        double accel_time = sqrt((0.5 * dominent_axis_accel) * distance_left) * (1.0/(0.5 * dominent_axis_accel));
-        double velocity_at_this_percentage = dominent_axis_accel * accel_time;
-        if (velocity_at_this_percentage > target_velocity) velocity_at_this_percentage = target_velocity; //cap velocity at the target feedrate;
-        if (velocity_at_this_percentage < dominent_axis_jerk) velocity_at_this_percentage = dominent_axis_jerk; //Make sure feedrate doesn't go below the dominent_axis_jerk
-        if (map_index < RAMP_MAP_SIZE) move->ramp_map[map_index++] = velocity_at_this_percentage * FEED_RAMP_SCALE;
-      }
+      double accel_time = sqrt((0.5 * dominent_axis_accel) * distance_in) * (1.0/(0.5 * dominent_axis_accel));
+      double velocity_at_this_percentage = dominent_axis_accel * accel_time;
+      if (velocity_at_this_percentage > target_velocity) velocity_at_this_percentage = target_velocity; //cap velocity at the target feedrate;
+      if (velocity_at_this_percentage < dominent_axis_jerk) velocity_at_this_percentage = dominent_axis_jerk;
+      if (map_index < RAMP_MAP_SIZE) ramp_map[map_index++] = velocity_at_this_percentage * FEED_RAMP_SCALE;
     }
-  }
-  else
-  {
-    printf(Serial, "Can't calculate ramp map on null index!\n");
+    else //We need to start thinking about how much distance is required to decelerate from our current velocity to a stop
+    {
+      double accel_time = sqrt((0.5 * dominent_axis_accel) * distance_left) * (1.0/(0.5 * dominent_axis_accel));
+      double velocity_at_this_percentage = dominent_axis_accel * accel_time;
+      if (velocity_at_this_percentage > target_velocity) velocity_at_this_percentage = target_velocity; //cap velocity at the target feedrate;
+      if (velocity_at_this_percentage < dominent_axis_jerk) velocity_at_this_percentage = dominent_axis_jerk; //Make sure feedrate doesn't go below the dominent_axis_jerk
+      if (map_index < RAMP_MAP_SIZE) ramp_map[map_index++] = velocity_at_this_percentage * FEED_RAMP_SCALE;
+    }
   }
 }
 void MotionPlanner::motion_set_feedrate(double feed)

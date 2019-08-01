@@ -148,9 +148,10 @@ class MotionPlanner
 
     This would be exact stop mode
 
-    move_index - index of the move that we are currently calculating the ramp map for
+    unsigned int ramp_map[RAMP_MAP_SIZE] - the ramp_map array that the values will be stored in
+    target_velocity - in units/sec
     */
-    void motion_calculate_ramp_map(int move_index, double x_dist_inches, double y_dist_inches);
+    void motion_calculate_ramp_map(unsigned int ramp_map[RAMP_MAP_SIZE], double x_dist_inches, double y_dist_inches, double target_velocity);
 
     /*
       Code to step_x

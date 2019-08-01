@@ -43,8 +43,9 @@ void rapid_move()
   char *first_word, *second_word;
 
   //Need to default polulate this with the current MCS position once motion library is up and running
-  double x = 0;
-  double y = 0;
+  XYZ_Double current = motion.get_current_position();
+  double x = current.x;
+  double y = current.y;
 
   first_word = sCmd.next();
   if (first_word != NULL)
