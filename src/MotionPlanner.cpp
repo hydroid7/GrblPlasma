@@ -184,25 +184,14 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
     Iterate through the moves and comparee this move to last move
     calculate a new exit velocity based on the polar angle of change
   */
-  if (MoveStack->numElements(MoveStack) < 2) return; //Has to be at least two moves on the stack!
-  for (int x = 0; x < MoveStack->numElements(MoveStack) - 1; x++) //-1 one so that next_move always exists
+  printf(Serial, "Moves on stack: %d\n", MoveStack->numElements(MoveStack));
+  int move_index = 0;
+  struct Move_Data *last_move = &CurrentMove;
+  struct Move_Data *this_move = (Move_Data*)MoveStack->peek(MoveStack, move_index);
+  double last_vector_angle = 0;
+  while(last_move != NULL && this_move != NULL)
   {
-    struct Move_Data *last_move;
-    struct Move_Data *this_move;
-    struct Move_Data *next_move;
-    if (x == 0) //Last move is the current move that's executing
-    {
-      last_move = &CurrentMove;
-      this_move = (Move_Data*)MoveStack->peek(MoveStack, x);
-      next_move = (Move_Data*)MoveStack->peek(MoveStack, x + 1);
-    }
-    else
-    {
-      last_move = (Move_Data*)MoveStack->peek(MoveStack, x-1);
-      this_move = (Move_Data*)MoveStack->peek(MoveStack, x);
-      next_move = (Move_Data*)MoveStack->peek(MoveStack, x + 1);
-    }
-    double dominent_axis_jerk = _Feed_Jerk.x; //Assume X then update to Y if its the dominent axis
+    double dominent_axis_jerk = _Feed_Jerk.x;
     double dominent_axis_accel = _Feed_Accel.x;
     double x_dist_inches = abs(last_move->target.x - this_move->target.x) / _Step_Scale.x;
     double y_dist_inches = abs(last_move->target.y - this_move->target.y) / _Step_Scale.y;
@@ -219,13 +208,10 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
     XYZ_Double this_target;
     this_target.x = this_move->target.x / _Step_Scale.x;
     this_target.y = this_move->target.y / _Step_Scale.y;
-    XYZ_Double next_target;
-    next_target.x = next_move->target.x / _Step_Scale.x;
-    next_target.y = next_move->target.y / _Step_Scale.y;
 
-    printf(Serial, "(continous motion)-> last_target: X%.4f Y%.4f, this_target: X%.4f Y%.4f, next_target: X%.4f Y%.4f\n", last_target.x, last_target.y, this_target.x, this_target.y, next_target.x, next_target.y);
+    printf(Serial, "(continous motion)-> last_target: X%.4f Y%.4f, this_target: X%.4f Y%.4f\n", last_target.x, last_target.y, this_target.x, this_target.y);
 
-    double angle_of_change = motion_get_relative_angle_between_vectors(last_target, this_target, this_target, next_target);
+    double angle_of_change = 45;
 
     printf(Serial, "Angle of change is: %.4f\n", angle_of_change);
     if (angle_of_change > 180) angle_of_change = 180;
@@ -244,6 +230,11 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
     this_move->entry_velocity = exit_velocity;
     this_move->accel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
     printf(Serial, "This Move Accel Marker is: %.4f\n", this_move->accel_marker);
+
+    //Update move data to next position
+    move_index++;
+    last_move = (Move_Data*)MoveStack->peek(MoveStack, move_index);
+    this_move = (Move_Data*)MoveStack->peek(MoveStack, move_index+1);
   }
 }
 void MotionPlanner::motion_tick()
@@ -310,8 +301,8 @@ void MotionPlanner::motion_tick()
         if (MoveStack->numElements(MoveStack) > 0) //There are pending moves on the stack!
         {
           MoveStack->pull(MoveStack, &CurrentMove);
-          motion_plan_moves_for_continuous_motion();
           motion_set_target();
+          motion_plan_moves_for_continuous_motion();
         }
         else
         {
