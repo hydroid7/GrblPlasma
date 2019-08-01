@@ -7,10 +7,10 @@
 #include "Arduino.h"
 #include "RingBuf.h"
 
-#define RAMP_MAP_SIZE 1000 //This gives us a resolution of 1000 feedrate changes on the ramp map
-#define MOVE_STACK_SIZE 30
+#define RAMP_MAP_SIZE 4000 //This gives us a resolution of 1000 feedrate changes on the ramp map
+#define MOVE_STACK_SIZE 6
 #define FEED_RAMP_SCALE 1000.0
-#define FEED_RAMP_UPDATE_INTERVAL 25 //This is in milliseconds
+#define FEED_RAMP_UPDATE_INTERVAL 10 //This is in milliseconds
 
 struct XYZ_Long {
    long x;

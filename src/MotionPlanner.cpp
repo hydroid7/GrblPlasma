@@ -119,6 +119,10 @@ bool MotionPlanner::push_target(XYZ_Double target)
     XYZ_Double current_position = get_current_position(); //Get current position so we can calculate the move distance from new target
     motion_calculate_ramp_map(move.ramp_map, fabs(current_position.x - target.x), fabs(current_position.y - target.y), (double)move.target.f / FEED_RAMP_SCALE);
     int move_index = MoveStack->add(MoveStack, &move); //Push the move to the stack!
+    if (Motion.run == false) //If we are not currently in motion, set our feedrate to min feed
+    {
+      motion_set_feedrate(0.016); //Minimum feed of 1 inch/min
+    }
     Motion.run = true; //Start motion after the ramp map has been calculated
     return true;
   }
@@ -126,23 +130,25 @@ bool MotionPlanner::push_target(XYZ_Double target)
 void MotionPlanner::motion_calculate_ramp_map(unsigned int ramp_map[RAMP_MAP_SIZE], double x_dist_inches, double y_dist_inches, double target_velocity)
 {
   if (x_dist_inches == 0 && y_dist_inches == 0) return; //Don't calculate a move with zero cartesion distance!
-  double cartesion_distance = sqrt(pow((x_dist_inches), 2) + pow(y_dist_inches, 2));
+  double cartesion_distance = sqrt(pow((x_dist_inches), 2) + pow(y_dist_inches, 2)); //How far is are move?
 
   double dominent_axis_accel = _Feed_Accel.x; //Assume X then update to Y if its the dominent axis
   if (y_dist_inches > x_dist_inches) dominent_axis_accel = _Feed_Accel.y;
   double dominent_axis_jerk = _Feed_Jerk.x; //Assume X then update to Y if its the dominent axis
   if (y_dist_inches > x_dist_inches) dominent_axis_jerk = _Feed_Jerk.y;
   int map_index = 0;
-  for (double percentage = 0; percentage < 100; percentage+=0.1) //Plot a feedrate value for each whole percentage
+  for (double x = 0; x < RAMP_MAP_SIZE; x++) //Plot a feedrate value for each RAMP_MAP slot
   {
-    double distance_in = cartesion_distance * (percentage / 100);
+    double distance_in = map(x, 0.0, (double)RAMP_MAP_SIZE-1, 0.0, cartesion_distance);
+    //printf(Serial, "Distance into move: %.4f, Total Distance = %.4f\n", distance_in, cartesion_distance);
     double distance_left = cartesion_distance - distance_in;
-    if (percentage < 50) //If we are less that half way through the move, only worry about acceleration
+    if (distance_in < (cartesion_distance / 2.0)) //If we are less that half way through the move, only worry about acceleration
     {
       double accel_time = sqrt((0.5 * dominent_axis_accel) * distance_in) * (1.0/(0.5 * dominent_axis_accel));
       double velocity_at_this_percentage = dominent_axis_accel * accel_time;
       if (velocity_at_this_percentage > target_velocity) velocity_at_this_percentage = target_velocity; //cap velocity at the target feedrate;
       if (velocity_at_this_percentage < dominent_axis_jerk) velocity_at_this_percentage = dominent_axis_jerk;
+      //printf(Serial, "Accelerating [%d] = %.4f\n", map_index, velocity_at_this_percentage * FEED_RAMP_SCALE);
       if (map_index < RAMP_MAP_SIZE) ramp_map[map_index++] = velocity_at_this_percentage * FEED_RAMP_SCALE;
     }
     else //We need to start thinking about how much distance is required to decelerate from our current velocity to a stop
@@ -150,7 +156,8 @@ void MotionPlanner::motion_calculate_ramp_map(unsigned int ramp_map[RAMP_MAP_SIZ
       double accel_time = sqrt((0.5 * dominent_axis_accel) * distance_left) * (1.0/(0.5 * dominent_axis_accel));
       double velocity_at_this_percentage = dominent_axis_accel * accel_time;
       if (velocity_at_this_percentage > target_velocity) velocity_at_this_percentage = target_velocity; //cap velocity at the target feedrate;
-      if (velocity_at_this_percentage < dominent_axis_jerk) velocity_at_this_percentage = dominent_axis_jerk; //Make sure feedrate doesn't go below the dominent_axis_jerk
+      //if (velocity_at_this_percentage < dominent_axis_jerk) velocity_at_this_percentage = dominent_axis_jerk; //Make sure feedrate doesn't go below the dominent_axis_jerk
+      printf(Serial, "Deccelerating [%d] = %.4f\n", map_index, velocity_at_this_percentage * FEED_RAMP_SCALE);
       if (map_index < RAMP_MAP_SIZE) ramp_map[map_index++] = velocity_at_this_percentage * FEED_RAMP_SCALE;
     }
   }
@@ -205,14 +212,11 @@ void MotionPlanner::motion_tick()
       }
       if (dominent_axis_stg > 0)
       {
-        double dominent_axis_steps = Motion.dx;
-        double dominent_stg = Motion.x_stg;
-        if (Motion.dy > Motion.dx)
-        {
-          dominent_axis_steps = Motion.dy;
-          dominent_stg = Motion.y_stg;
-        }
-        percentage_into_move = map(dominent_stg / dominent_axis_steps, 1, 0, 0, RAMP_MAP_SIZE - 1);
+        double distance_left = sqrt(pow((Motion.x_stg / _Step_Scale.x), 2) + pow((Motion.y_stg / _Step_Scale.y), 2));
+        double cartesion_distance = sqrt(pow((Motion.dx / _Step_Scale.x), 2) + pow((Motion.dy / _Step_Scale.y), 2));
+        double distance_in = cartesion_distance - distance_left;
+        percentage_into_move = map(distance_in, 0.0, cartesion_distance, 0, RAMP_MAP_SIZE);
+        if (percentage_into_move > RAMP_MAP_SIZE-1) percentage_into_move = RAMP_MAP_SIZE-1;
         double new_feed_rate = (double)CurrentMove.ramp_map[(int)percentage_into_move] / FEED_RAMP_SCALE;
         //printf(Serial, "Move Percentage: %.4f, feedrate = %.4f\n", percentage_into_move, new_feed_rate);
         motion_set_feedrate(new_feed_rate);

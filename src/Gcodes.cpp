@@ -10,6 +10,11 @@ bool PendingOkay;
 SerialCommand sCmd;
 MotionPlanner motion;
 
+void unrecognized(const char *command)
+{
+  printf(Serial, "\"%s\" is not a supported command!\n", command);
+  PendingOkay = true;
+}
 void position_report()
 {
   XYZ_Double position = motion.get_current_position();
@@ -177,6 +182,8 @@ void gcodes_init()
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);
   sCmd.addCommand("G1", line_move);
+
+  sCmd.setDefaultHandler(unrecognized);
 
   PendingOkay = false;
 }

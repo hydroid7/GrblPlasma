@@ -23,7 +23,7 @@ bool dro_output(void *)
   if (motion.is_in_motion()) //Are we currently in motion?
   {
     XYZ_Double pos = motion.get_current_position();
-    printf(Serial, "DRO: X_MCS=%.4f Y_MCS=%.4f VELOCITY=%.4f\n", pos.x, pos.y, pos.f);
+    //printf(Serial, "DRO: X_MCS=%.4f Y_MCS=%.4f VELOCITY=%.4f\n", pos.x, pos.y, pos.f);
   }
   return true; // repeat? true
 }
