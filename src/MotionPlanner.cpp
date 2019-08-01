@@ -142,13 +142,28 @@ void MotionPlanner::motion_calculate_ramp_map(int move_index, double x_dist_inch
       }
     }
   }
+  else
+  {
+    printf(Serial, "Can't calculate ramp map on null index!\n");
+  }
 }
 void MotionPlanner::motion_set_feedrate(double feed)
 {
   if (Motion.dx == 0 && Motion.dy == 0) return;
-  if (feed == 0) return; //Can't caclulate a feedrate of zero!
+  //if (feed == 0) return; //Can't caclulate a feedrate of zero!
   double x_dist_inches = (double)Motion.dx / _Step_Scale.x;
   double y_dist_inches = (double)Motion.dy / _Step_Scale.y;
+  if (feed == 0)
+  {
+    if (x_dist_inches > y_dist_inches)
+    {
+      feed = _Feed_Jerk.x;
+    }
+    else
+    {
+      feed = _Feed_Jerk.y;
+    }
+  }
   double cartesion_distance = sqrt(pow((x_dist_inches), 2) + pow(y_dist_inches, 2));
   double move_duration_sec = cartesion_distance / feed;
   long number_of_cycles = Motion.dx;
@@ -191,7 +206,7 @@ void MotionPlanner::motion_tick()
         }
         percentage_into_move = map(dominent_stg / dominent_axis_steps, 1, 0, 0, RAMP_MAP_SIZE - 1);
         double new_feed_rate = (double)CurrentMove.ramp_map[(int)percentage_into_move] / FEED_RAMP_SCALE;
-        printf(Serial, "Move Percentage: %.4f, feedrate = %.4f\n", percentage_into_move, new_feed_rate);
+        //printf(Serial, "Move Percentage: %.4f, feedrate = %.4f\n", percentage_into_move, new_feed_rate);
         motion_set_feedrate(new_feed_rate);
         //get_current_velocity();
       }
