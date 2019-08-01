@@ -188,7 +188,7 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
   int move_index = 0;
   struct Move_Data *last_move = &CurrentMove;
   struct Move_Data *this_move = (Move_Data*)MoveStack->peek(MoveStack, move_index);
-  double last_vector_angle = 0;
+  double last_vector_angle = 360; //Zero is 360!
   while(last_move != NULL && this_move != NULL)
   {
     double dominent_axis_jerk = _Feed_Jerk.x;
@@ -211,7 +211,10 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
 
     printf(Serial, "(continous motion)-> last_target: X%.4f Y%.4f, this_target: X%.4f Y%.4f\n", last_target.x, last_target.y, this_target.x, this_target.y);
 
-    double angle_of_change = 45;
+    double vector_angle = motion_get_vector_angle(last_target, this_target);
+    if (vector_angle == 0) vector_angle += 360;
+
+    double angle_of_change = fabs(last_vector_angle - vector_angle);
 
     printf(Serial, "Angle of change is: %.4f\n", angle_of_change);
     if (angle_of_change > 180) angle_of_change = 180;
@@ -231,6 +234,7 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
     this_move->accel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
     printf(Serial, "This Move Accel Marker is: %.4f\n", this_move->accel_marker);
 
+    last_vector_angle = vector_angle;
     //Update move data to next position
     move_index++;
     last_move = (Move_Data*)MoveStack->peek(MoveStack, move_index);
