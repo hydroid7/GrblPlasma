@@ -19,13 +19,11 @@ void hold()
 {
   printf(Serial, "Feedhold!\n");
   motion.feedhold();
-  PendingOkay = true;
 }
 void run()
 {
   printf(Serial, "Run!\n");
   motion.run();
-  PendingOkay = true;
 }
 void position_report()
 {
@@ -191,7 +189,7 @@ void gcodes_init()
   sCmd.addCommand("hello", hello);
   sCmd.addCommand("dump_moves", dump_moves);
 
-  //Real-Time commands
+  //Real-Time commands, these commands should not return an OK!
   sCmd.addCommand("?", position_report);
   sCmd.addCommand("hold", hold);
   sCmd.addCommand("run", run);
