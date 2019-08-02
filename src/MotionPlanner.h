@@ -43,6 +43,7 @@ struct Bresenham_Data {
    */
    bool pendingFeedhold;
    bool feedholdActive;
+   bool pendingSoftAbort;
 };
 
 struct Move_Data {
@@ -88,6 +89,11 @@ class MotionPlanner
       Clear stack and halt motion
     */
     void abort();
+
+    /*
+      Feedhold then abort once the feedhold is complete
+    */
+    void soft_abort();
 
     /*
       Pushes a new target to the target buffer and updates feedramps for constant motion based on the other moves on the stack
@@ -141,7 +147,7 @@ class MotionPlanner
     double percentage_into_move; //This store the percentage complete through the current move, needs to be global in order to insert feedholds into ramp_map
 
     Move_Data CurrentMove; //Holds the current move that has been popped of the top of the move stack
-    Bresenham_Data Motion;
+    volatile Bresenham_Data Motion;
 
     /*
       Sets the new target position. Reads CurrentMove to get X,Y target data and sets the breseham variables in Move

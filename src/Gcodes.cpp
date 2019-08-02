@@ -21,6 +21,12 @@ void abort()
   motion.abort();
   //Also need to turn of torch and retract to clearance height!
 }
+void soft_abort()
+{
+  printf(Serial, "Soft!\n");
+  motion.soft_abort();
+  //Also need to turn of torch and retract to clearance height!
+}
 void hold()
 {
   printf(Serial, "Feedhold!\n");
@@ -200,6 +206,7 @@ void gcodes_init()
   sCmd.addCommand("hold", hold);
   sCmd.addCommand("run", run);
   sCmd.addCommand("abort", abort);
+  sCmd.addCommand("soft_abort", soft_abort);
 
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);

@@ -88,6 +88,11 @@ void MotionPlanner::run()
   Motion.run = true;
   Motion.feedholdActive = false;
 }
+void MotionPlanner::soft_abort()
+{
+  Motion.pendingSoftAbort = true;
+  feedhold();
+}
 void MotionPlanner::abort()
 {
   /*if (Motion.run == true) //Only add a pending feedhold if we are in motion
@@ -102,6 +107,8 @@ void MotionPlanner::abort()
   Motion.x_stg = 0;
   Motion.y_stg = 0;
   Motion.run = true;
+  Motion.pendingFeedhold = false;
+  Motion.feedholdActive = false;
 }
 XYZ_Double MotionPlanner::get_last_moves_target()
 {
@@ -360,6 +367,11 @@ void MotionPlanner::motion_tick()
             {
               Motion.run = false;
               CurrentMove.feedhold_marker = distance_in;
+              if (Motion.pendingSoftAbort == true)
+              {
+                Motion.pendingSoftAbort = false;
+                abort();
+              }
             }
           }
         }
@@ -370,6 +382,11 @@ void MotionPlanner::motion_tick()
             Motion.pendingFeedhold = false;
             Motion.feedholdActive = true;
             Motion.run = false;
+            if (Motion.pendingSoftAbort == true)
+            {
+              Motion.pendingSoftAbort = false;
+              abort();
+            }
           }
           else
           {
