@@ -52,6 +52,7 @@ struct Move_Data {
    */
    double accel_marker;
    double deccel_marker;
+   double feedhold_marker;
    /*
     Keep track of the entry and exit velocitys. They should be set to the minimum feedrate, and markers should be caclulated to reflect this.
     When the planner re-calculates for continnous motion, the entry and exit velocities need to be updates and the markers do as well!

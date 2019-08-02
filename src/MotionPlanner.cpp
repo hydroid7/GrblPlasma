@@ -326,24 +326,41 @@ void MotionPlanner::motion_tick()
           {
             Motion.pendingFeedhold = false;
             Motion.feedholdActive = true;
-            CurrentMove.deccel_marker = distance_left;
+            CurrentMove.feedhold_marker = distance_left; //This is where the feedhold begins
           }
-          double new_feed_rate;
-          bool changed = false;
-          if (distance_in < CurrentMove.accel_marker) //We should be accelerating
+          if (Motion.feedholdActive == false)
           {
-            new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, distance_in);
-            changed = true;
+            double new_feed_rate;
+            bool changed = false;
+            if ((distance_in - CurrentMove.feedhold_marker) < CurrentMove.accel_marker) //We should be accelerating
+            {
+              new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, (distance_in - CurrentMove.feedhold_marker));
+              changed = true;
+            }
+            if (distance_left < CurrentMove.deccel_marker) //We should be deccelerating
+            {
+              new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, distance_left);
+              changed = true;
+            }
+            if (changed)
+            {
+              //printf(Serial, "New feedrate: %.4f\n", new_feed_rate);
+              if (new_feed_rate > MIN_FEED_RATE && new_feed_rate < CurrentMove.target.f / FEED_VALUE_SCALE) motion_set_feedrate(new_feed_rate);
+            }
           }
-          if (distance_left < CurrentMove.deccel_marker) //We should be deccelerating
+          else //Feedhold is active, calculate the deccel ramp, stop Motion when feedrate gets under MIN_FEED_RATE
           {
-            new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, distance_left);
-            changed = true;
-          }
-          if (changed)
-          {
-            //printf(Serial, "New feedrate: %.4f\n", new_feed_rate);
-            motion_set_feedrate(new_feed_rate);
+            double new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, CurrentMove.deccel_marker - (CurrentMove.feedhold_marker - distance_left));
+            //printf(Serial,"Rapid Feedhold: %.4f\n", new_feed_rate);
+            if (new_feed_rate > MIN_FEED_RATE)
+            {
+              motion_set_feedrate(new_feed_rate);
+            }
+            else
+            {
+              Motion.run = false;
+              CurrentMove.feedhold_marker = distance_in;
+            }
           }
         }
         else //If we are a line move just do continous motion
