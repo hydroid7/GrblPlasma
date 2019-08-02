@@ -110,7 +110,7 @@ void rapid_move()
   t.x = x;
   t.y = y;
   t.z = 0;
-  t.f = 350.0; //Rapid feedrate, units/min
+  t.f = 600.0; //Rapid feedrate, units/min
   motion.push_target(t, RAPID_MOVE);
   PendingOkay = true;
 }
