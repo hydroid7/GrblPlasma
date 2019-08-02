@@ -15,6 +15,12 @@ void unrecognized(const char *command)
   printf(Serial, "\"%s\" is not a supported command!\n", command);
   PendingOkay = true;
 }
+void abort()
+{
+  printf(Serial, "Abort!\n");
+  motion.abort();
+  //Also need to turn of torch and retract to clearance height!
+}
 void hold()
 {
   printf(Serial, "Feedhold!\n");
@@ -193,6 +199,7 @@ void gcodes_init()
   sCmd.addCommand("?", position_report);
   sCmd.addCommand("hold", hold);
   sCmd.addCommand("run", run);
+  sCmd.addCommand("abort", abort);
 
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);

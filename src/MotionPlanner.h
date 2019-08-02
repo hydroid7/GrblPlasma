@@ -84,6 +84,11 @@ class MotionPlanner
     void run();
 
     /*
+      Clear stack and halt motion
+    */
+    void abort();
+
+    /*
       Pushes a new target to the target buffer and updates feedramps for constant motion based on the other moves on the stack
       returns false if the target buffer is full.
 

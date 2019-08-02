@@ -88,6 +88,15 @@ void MotionPlanner::run()
   Motion.run = true;
   Motion.feedholdActive = false;
 }
+void MotionPlanner::abort()
+{
+  if (Motion.run == true) //Only add a pending feedhold if we are in motion
+  {
+    Motion.pendingFeedhold = true;
+  }
+  struct Move_Data move;
+  while (MoveStack->pull(MoveStack, &move)); //This just clears the stack from the tail to the head
+}
 XYZ_Double MotionPlanner::get_last_moves_target()
 {
   XYZ_Double pos;
