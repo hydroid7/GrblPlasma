@@ -63,7 +63,7 @@ void TorchControl::tick()
 }
 unsigned long TorchControl::cycle_frequency_from_feedrate(double feedrate)
 {
-  return ((60 * 1000) / (_Step_Scale)) / feedrate;
+  return ((1000 * 1000) / (_Step_Scale)) / feedrate;
 }
 void TorchControl::move_tick()
 {
