@@ -60,8 +60,8 @@ void MotionPlanner::init()
   Motion.x_stg = 0;
   Motion.y_stg = 0;
   Motion.run = true;
-  Motion.pendingFeedhold = true;
-  Motion.feedholdActive = true;
+  Motion.pendingFeedhold = false;
+  Motion.feedholdActive = false;
 
   percentage_into_move = 0;
 
@@ -90,12 +90,18 @@ void MotionPlanner::run()
 }
 void MotionPlanner::abort()
 {
-  if (Motion.run == true) //Only add a pending feedhold if we are in motion
+  /*if (Motion.run == true) //Only add a pending feedhold if we are in motion
   {
     Motion.pendingFeedhold = true;
-  }
+  }*/
   struct Move_Data move;
   while (MoveStack->pull(MoveStack, &move)); //This just clears the stack from the tail to the head
+  Motion.dx = 0, Motion.sx = 0;
+  Motion.dy = 0, Motion.sy = 0;
+  Motion.err = 0;
+  Motion.x_stg = 0;
+  Motion.y_stg = 0;
+  Motion.run = true;
 }
 XYZ_Double MotionPlanner::get_last_moves_target()
 {
