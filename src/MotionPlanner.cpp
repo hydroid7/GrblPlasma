@@ -380,6 +380,7 @@ void MotionPlanner::motion_step_x(int dir)
   {
     digitalWrite(1, LOW);
   }
+  delayMicroseconds(20); //Delay for direction change
   digitalWrite(0, HIGH);
   delayMicroseconds(20);
   digitalWrite(0, LOW);
@@ -396,6 +397,7 @@ void MotionPlanner::motion_step_y(int dir)
     digitalWrite(3, HIGH);
     digitalWrite(10, HIGH);
   }
+  delayMicroseconds(20); //Delay for direction change
   digitalWrite(2, HIGH);
   digitalWrite(9, HIGH);
   delayMicroseconds(20);
