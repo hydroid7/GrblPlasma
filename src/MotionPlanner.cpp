@@ -178,7 +178,7 @@ double MotionPlanner::motion_calculate_feed_from_distance(double accel_rate, dou
   double accel_time = sqrt((0.5 * accel_rate) * distance_into_move) * (1.0/(0.5 * accel_rate));
   return (accel_rate * accel_time);
 }
-void MotionPlanner::motion_plan_moves_for_continuous_motion()
+void MotionPlanner::motion_plan_moves_for_continuous_motion_junk()
 {
   /*
     Iterate through the moves and comparee this move to last move
@@ -226,6 +226,7 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
     if (peak_velocity > ((double)last_move->target.f / FEED_VALUE_SCALE)) peak_velocity = ((double)last_move->target.f / FEED_VALUE_SCALE);
     printf(Serial, "Peak Velocity is: %.4f\n", peak_velocity);
 
+    //Figure out how much distance is required to accelerate from peak velocity to exit velocity
     last_move->exit_velocity = exit_velocity;
     last_move->deccel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
     printf(Serial, "Last Move Decel Marker is: %.4f\n", last_move->deccel_marker);
@@ -240,6 +241,16 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
     last_move = (Move_Data*)MoveStack->peek(MoveStack, move_index);
     this_move = (Move_Data*)MoveStack->peek(MoveStack, move_index+1);
   }
+}
+void MotionPlanner::motion_plan_moves_for_continuous_motion()
+{
+  /*
+    First pass - We need to iterate through all the moves on the stack and save the "current_move" pointer to an array when our vector angle change is more than x degrees.
+    Moves that are more than x degrees need to slow down before entering "next_move". Set all the accel and deccel markers to -1 so that there won't be any acceleration or
+    decceleration along those moves.
+
+    Second pass -
+  */
 }
 void MotionPlanner::motion_tick()
 {
@@ -284,6 +295,7 @@ void MotionPlanner::motion_tick()
           //printf(Serial, "New feedrate: %.4f\n", new_feed_rate);
           motion_set_feedrate(new_feed_rate);
         }
+        motion_set_feedrate(0.583);
       }
       _Feed_Sample_Timestamp = millis();
     }
