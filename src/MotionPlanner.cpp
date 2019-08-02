@@ -65,6 +65,13 @@ void MotionPlanner::init()
 
   percentage_into_move = 0;
 
+  pinMode(1, OUTPUT);
+  pinMode(0, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(9, OUTPUT);
+
   if (motion_timer.begin(motion_timer_tick, 1))
   {
     printf(Serial, "Motion Timer init: OK!\n");

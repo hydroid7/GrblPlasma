@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "Machine.h"
 #include "MotionPlanner.h"
+#include "TorchControl.h"
 #include "RingBuf.h"
 #include "Gcodes.h"
 #include "timer.h"
@@ -39,15 +40,9 @@ void setup()
 {
   //Init everything
   pinMode(LED, OUTPUT);
-  pinMode(1, OUTPUT);
-  pinMode(0, OUTPUT);
-  pinMode(3, OUTPUT);
-  pinMode(10, OUTPUT);
-  pinMode(2, OUTPUT);
-  pinMode(9, OUTPUT);
-
   gcodes_init();
   motion.init();
+  torch.init();
 
   //Setup timer tasks
   cpu_blink_timer.every(1000, cpu_blink);

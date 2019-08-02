@@ -2,6 +2,7 @@
 #include "Machine.h"
 #include "SerialCommand.h"
 #include "MotionPlanner.h"
+#include "TorchControl.h"
 #include "RingBuf.h"
 #include "Gcodes.h"
 
@@ -9,6 +10,7 @@ bool PendingOkay;
 
 SerialCommand sCmd;
 MotionPlanner motion;
+TorchControl torch;
 
 void unrecognized(const char *command)
 {
@@ -66,6 +68,23 @@ void init()
 {
   motion.init();
   printf(Serial, "ok\n");
+}
+void movez()
+{
+  char *distance = sCmd.next();
+  char *feedrate = sCmd.next();
+
+  if (distance != NULL && feedrate != NULL)
+  {
+    double feed = atof(feedrate) / 60;
+    double dist = atof(distance);
+    printf(Serial, "Moving Z %.4f units at %.4f units/min\n", dist, feed * 60);
+    torch.move_z_incremental(dist, feed);
+  }
+  else
+  {
+    printf(Serial, "Command usage: movez <distance> <feedrate>\n");
+  }
 }
 /* Begin Gcode functions after here */
 void rapid_move()
@@ -207,6 +226,7 @@ void gcodes_init()
   sCmd.addCommand("run", run);
   sCmd.addCommand("abort", abort);
   sCmd.addCommand("soft_abort", soft_abort);
+  sCmd.addCommand("movez", movez);
 
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);
