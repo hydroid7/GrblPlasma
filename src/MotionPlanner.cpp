@@ -60,6 +60,8 @@ void MotionPlanner::init()
   Motion.x_stg = 0;
   Motion.y_stg = 0;
   Motion.run = true;
+  Motion.pendingFeedhold = true;
+  Motion.feedholdActive = true;
 
   percentage_into_move = 0;
 
@@ -84,6 +86,7 @@ void MotionPlanner::run()
 {
   CurrentMove.deccel_marker = CurrentMove.accel_marker;
   Motion.run = true;
+  Motion.feedholdActive = false;
 }
 XYZ_Double MotionPlanner::get_last_moves_target()
 {
@@ -149,7 +152,10 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
     {
       motion_set_feedrate(move.entry_velocity); //Minimum feed of 1 inch/min
     }
-    Motion.run = true; //Start motion after the ramp map has been calculated
+    if (Motion.feedholdActive == false)
+    {
+      Motion.run = true; //Start motion after the ramp map has been calculated
+    }
     return true;
   }
 }
@@ -304,6 +310,7 @@ void MotionPlanner::motion_tick()
           if (Motion.pendingFeedhold == true) //Handle our pending feedhold
           {
             Motion.pendingFeedhold = false;
+            Motion.feedholdActive = true;
             CurrentMove.deccel_marker = distance_left;
           }
           double new_feed_rate;
@@ -329,6 +336,7 @@ void MotionPlanner::motion_tick()
           if (Motion.pendingFeedhold == true) //Handle our pending feedhold
           {
             Motion.pendingFeedhold = false;
+            Motion.feedholdActive = true;
             Motion.run = false;
           }
           else

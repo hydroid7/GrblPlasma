@@ -42,6 +42,7 @@ struct Bresenham_Data {
     in a rapid move - we set a new deccel_marker for just ahead of our current position and set run=false once we deccel to MIN_FEED_RATE.
    */
    bool pendingFeedhold;
+   bool feedholdActive;
 };
 
 struct Move_Data {
