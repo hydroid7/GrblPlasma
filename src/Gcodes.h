@@ -9,6 +9,7 @@ extern "C" {
  *      INCLUDES
  *********************/
 #include "MotionPlanner.h"
+#include "TorchControl.h"
 /*********************
  *      DEFINES
  *********************/
@@ -35,6 +36,7 @@ extern "C" {
  *      GLOBALS
  **********************/
 extern MotionPlanner motion;
+extern TorchControl torch;
 extern bool OkayFlag;
 
 
