@@ -34,7 +34,14 @@ struct Bresenham_Data {
    int err;
    long x_stg;
    long y_stg;
-   bool run;
+   bool run; //This flag will be true while system is in motion and false when it is now
+
+   /*
+    This flag will be set to true when a feedhold needs to be triggered and set to false once it's been handled.
+    We check if it needs to be handled during every move
+    in a rapid move - we set a new deccel_marker for just ahead of our current position and set run=false once we deccel to MIN_FEED_RATE.
+   */
+   bool pendingFeedhold;
 };
 
 struct Move_Data {
@@ -64,6 +71,16 @@ class MotionPlanner
       Sets up the motion timer interupt
     */
     void init();
+
+    /*
+      Feed hold the current motion
+    */
+    void feedhold();
+
+    /*
+      Sets the run flag to true
+    */
+    void run();
 
     /*
       Pushes a new target to the target buffer and updates feedramps for constant motion based on the other moves on the stack

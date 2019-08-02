@@ -73,6 +73,18 @@ void MotionPlanner::init()
   }
 
 }
+void MotionPlanner::feedhold()
+{
+  if (Motion.run == true) //Only add a pending feedhold if we are in motion
+  {
+    Motion.pendingFeedhold = true;
+  }
+}
+void MotionPlanner::run()
+{
+  CurrentMove.deccel_marker = CurrentMove.accel_marker;
+  Motion.run = true;
+}
 XYZ_Double MotionPlanner::get_last_moves_target()
 {
   XYZ_Double pos;
@@ -289,6 +301,11 @@ void MotionPlanner::motion_tick()
         */
         if (CurrentMove.move_type == RAPID_MOVE) //Calculate trapazoidal velocity profile on rapid moves
         {
+          if (Motion.pendingFeedhold == true) //Handle our pending feedhold
+          {
+            Motion.pendingFeedhold = false;
+            CurrentMove.deccel_marker = distance_left;
+          }
           double new_feed_rate;
           bool changed = false;
           if (distance_in < CurrentMove.accel_marker) //We should be accelerating
@@ -309,7 +326,15 @@ void MotionPlanner::motion_tick()
         }
         else //If we are a line move just do continous motion
         {
-          motion_set_feedrate(CurrentMove.target.f / FEED_VALUE_SCALE);
+          if (Motion.pendingFeedhold == true) //Handle our pending feedhold
+          {
+            Motion.pendingFeedhold = false;
+            Motion.run = false;
+          }
+          else
+          {
+            motion_set_feedrate(CurrentMove.target.f / FEED_VALUE_SCALE);
+          }
         }
       }
       _Feed_Sample_Timestamp = millis();

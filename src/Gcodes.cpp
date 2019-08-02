@@ -15,6 +15,18 @@ void unrecognized(const char *command)
   printf(Serial, "\"%s\" is not a supported command!\n", command);
   PendingOkay = true;
 }
+void hold()
+{
+  printf(Serial, "Feedhold!\n");
+  motion.feedhold();
+  PendingOkay = true;
+}
+void run()
+{
+  printf(Serial, "Run!\n");
+  motion.run();
+  PendingOkay = true;
+}
 void position_report()
 {
   XYZ_Double position = motion.get_current_position();
@@ -43,6 +55,7 @@ void dump_moves()
 void init()
 {
   motion.init();
+  printf(Serial, "ok\n");
 }
 /* Begin Gcode functions after here */
 void rapid_move()
@@ -173,11 +186,15 @@ void gcodes_init()
 {
   Serial.begin(9600);
 
-  //All special command below here
+  //All special commands below here
   sCmd.addCommand("init", init);
   sCmd.addCommand("hello", hello);
-  sCmd.addCommand("?", position_report);
   sCmd.addCommand("dump_moves", dump_moves);
+
+  //Real-Time commands
+  sCmd.addCommand("?", position_report);
+  sCmd.addCommand("hold", hold);
+  sCmd.addCommand("run", run);
 
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);
