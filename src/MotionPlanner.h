@@ -7,9 +7,12 @@
 #include "Arduino.h"
 #include "RingBuf.h"
 
-#define MOVE_STACK_SIZE 6
+#define MOVE_STACK_SIZE 50
 #define FEED_VALUE_SCALE 1000.0
 #define FEED_RAMP_UPDATE_INTERVAL 10 //This is in milliseconds
+
+#define RAPID_MOVE 0
+#define LINE_MOVE 1
 
 struct XYZ_Long {
    long x;
@@ -47,6 +50,8 @@ struct Move_Data {
    */
    double entry_velocity; //units/sec
    double exit_velocity; //units/sec
+
+   uint8_t move_type;
 };
 extern RingBuf *MoveStack;
 
@@ -66,7 +71,7 @@ class MotionPlanner
 
       target - XYZ_Double set to a position in scaled units and f is feedrate in units/min
     */
-    bool push_target(XYZ_Double target);
+    bool push_target(XYZ_Double target, uint8_t move_type);
 
     /*
       Returns a XYZ_Double with current machine coordinant positions
@@ -132,6 +137,7 @@ class MotionPlanner
         - this should be called everytime a new target is pushed to the stack
     */
     void motion_plan_moves_for_continuous_motion();
+    void motion_plan_moves_for_continuous_motion_junk();
 
     /*
       Return a polar angle between two cartesion points

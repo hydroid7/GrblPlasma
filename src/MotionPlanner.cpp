@@ -99,7 +99,7 @@ XYZ_Double MotionPlanner::get_current_position()
   pos.f = sqrt(pow((CurrentVelocity.x), 2) + pow(CurrentVelocity.y, 2)) * 60;
   return pos;
 }
-bool MotionPlanner::push_target(XYZ_Double target)
+bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
 {
   if (MoveStack->isFull(MoveStack))
   {
@@ -114,13 +114,22 @@ bool MotionPlanner::push_target(XYZ_Double target)
     move.target.y = target.y * _Step_Scale.y;
     move.target.z = 0; //Right now we only need XY for plasma cutting, we'll add in more axis later
     move.target.f = (target.f * 0.0166666) * FEED_VALUE_SCALE;
-
+    move.move_type = move_type;
     //If we are the first move on the stack, make sure we calculate the ramp_map before we start motion otherwise motion could outrun the calculated values on small moves
     XYZ_Double current_position = get_last_moves_target();
     double dominant_accel = _Feed_Accel.x; //Assume X is dominant
-    if (abs(target.y - current_position.y) > abs(target.x - current_position.x)) dominant_accel = _Feed_Accel.y; //Y axis is the dominant axis, use it's accel
-    move.accel_marker = motion_calculate_accel_marker(dominant_accel, (target.f * 0.0166666)); //We should not be accelerating after this marker compared to distance in.
-    move.deccel_marker = motion_calculate_accel_marker(dominant_accel, (target.f * 0.0166666)); //We should not be accelerating after this marker compared to distance left.
+    double dominant_dist = abs(target.x - current_position.x);
+    if (abs(target.y - current_position.y) > abs(target.x - current_position.x))
+    {
+      dominant_accel = _Feed_Accel.y; //Y axis is the dominant axis, use it's accel
+      dominant_dist = abs(target.y - current_position.y);
+    }
+    double peak_feedrate = motion_calculate_feed_from_distance(dominant_accel, dominant_dist / 2); //Calculate feed triangle
+    if (peak_feedrate > (target.f * 0.0166666)) peak_feedrate = (target.f * 0.0166666);
+
+    move.accel_marker = motion_calculate_accel_marker(dominant_accel, peak_feedrate); //We should not be accelerating after this marker compared to distance in.
+    move.deccel_marker = motion_calculate_accel_marker(dominant_accel, peak_feedrate); //We should not be accelerating after this marker compared to distance left.
+    printf(Serial, "Peak Feedrate is (unit/min): %.4f, Accel Marker is: %.4f, Deccel Marker is: %.4f\n", peak_feedrate * 60, move.accel_marker, move.deccel_marker);
     move.entry_velocity = MIN_FEED_RATE;
     move.exit_velocity = MIN_FEED_RATE;
     int move_index = MoveStack->add(MoveStack, &move); //Push the move to the stack!
@@ -278,24 +287,30 @@ void MotionPlanner::motion_tick()
         /*
           Use our distance in to deterine which marker we should be using. If accelerating or deccelerating, calculate that value and call motion_set_feedrate
         */
-        double new_feed_rate;
-        bool changed = false;
-        if (distance_in < CurrentMove.accel_marker) //We should be accelerating
+        if (CurrentMove.move_type == RAPID_MOVE) //Calculate trapazoidal velocity profile on rapid moves
         {
-          new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, distance_in);
-          changed = true;
+          double new_feed_rate;
+          bool changed = false;
+          if (distance_in < CurrentMove.accel_marker) //We should be accelerating
+          {
+            new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, distance_in);
+            changed = true;
+          }
+          if (distance_left < CurrentMove.deccel_marker) //We should be deccelerating
+          {
+            new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, distance_left);
+            changed = true;
+          }
+          if (changed)
+          {
+            //printf(Serial, "New feedrate: %.4f\n", new_feed_rate);
+            motion_set_feedrate(new_feed_rate);
+          }
         }
-        if (distance_left < CurrentMove.deccel_marker) //We should be deccelerating
+        else //If we are a line move just do continous motion
         {
-          new_feed_rate = motion_calculate_feed_from_distance(dominent_axis_accel, distance_left);
-          changed = true;
+          motion_set_feedrate(CurrentMove.target.f / FEED_VALUE_SCALE);
         }
-        if (changed)
-        {
-          //printf(Serial, "New feedrate: %.4f\n", new_feed_rate);
-          motion_set_feedrate(new_feed_rate);
-        }
-        motion_set_feedrate(0.583);
       }
       _Feed_Sample_Timestamp = millis();
     }
@@ -366,7 +381,7 @@ void MotionPlanner::motion_step_x(int dir)
     digitalWrite(1, LOW);
   }
   digitalWrite(0, HIGH);
-  delayMicroseconds(5);
+  delayMicroseconds(20);
   digitalWrite(0, LOW);
 }
 void MotionPlanner::motion_step_y(int dir)
@@ -383,7 +398,7 @@ void MotionPlanner::motion_step_y(int dir)
   }
   digitalWrite(2, HIGH);
   digitalWrite(9, HIGH);
-  delayMicroseconds(5);
+  delayMicroseconds(20);
   digitalWrite(2, LOW);
   digitalWrite(9, LOW);
 }

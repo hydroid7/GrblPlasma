@@ -88,7 +88,7 @@ void rapid_move()
   t.y = y;
   t.z = 0;
   t.f = 350.0; //Rapid feedrate, units/min
-  motion.push_target(t);
+  motion.push_target(t, RAPID_MOVE);
   PendingOkay = true;
 }
 void line_move()
@@ -164,7 +164,7 @@ void line_move()
   t.y = y;
   t.z = 0;
   t.f = f; //Rapid feedrate, units/min
-  motion.push_target(t);
+  motion.push_target(t, LINE_MOVE);
   PendingOkay = true;
 }
 
