@@ -3,10 +3,13 @@
 #include "SerialCommand.h"
 #include "MotionPlanner.h"
 #include "TorchControl.h"
+#include "MotionSyncCallbacks.h"
 #include "RingBuf.h"
 #include "Gcodes.h"
 
 bool PendingOkay;
+bool WaitForMotionSync;
+void (*MotionSyncCallback)();
 
 SerialCommand sCmd;
 MotionPlanner motion;
@@ -16,6 +19,11 @@ void unrecognized(const char *command)
 {
   printf(Serial, "\"%s\" is not a supported command!\n", command);
   PendingOkay = true;
+}
+void test()
+{
+  printf(Serial, "Setting sync callback!\n");
+  SyncMotion(&probe_and_fire_torch);
 }
 void abort()
 {
@@ -231,17 +239,39 @@ void gcodes_init()
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);
   sCmd.addCommand("G1", line_move);
+  sCmd.addCommand("test", test);
 
   sCmd.setDefaultHandler(unrecognized);
 
   PendingOkay = false;
+  WaitForMotionSync = false;
 }
 void gcodes_tick()
 {
   if (PendingOkay == true && MoveStack->isFull(MoveStack) == false)
   {
-    PendingOkay = false;
-    printf(Serial, "ok\n"); //Send an okay once there is room in the stack!
+    if (WaitForMotionSync == false) //We are not waiting for motion to sync, keep sending lines
+    {
+      PendingOkay = false;
+      printf(Serial, "ok\n"); //Send an okay once there is room in the stack!
+    }
+    else //WiatForMotionSynce == true
+    {
+      //printf(Serial, "Waiting for motion to sync!\n");
+      //Stop sending lines until the MoveStack is empty and the machine is not in motion anymore
+      if (motion.is_in_motion() == false && MoveStack->isEmpty(MoveStack))
+      {
+        WaitForMotionSync = false; //The machine is at the last position sent!
+        //printf(Serial, "Motion is synced!\n");
+        if (MotionSyncCallback != NULL)  MotionSyncCallback();
+      }
+    }
   }
   sCmd.readSerial();
+}
+void SyncMotion(void (*callback)())
+{
+  MotionSyncCallback = callback;
+  WaitForMotionSync = true;
+  PendingOkay = true;
 }

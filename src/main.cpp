@@ -48,7 +48,7 @@ void setup()
   cpu_blink_timer.every(1000, cpu_blink);
 
   dro_stop_report = false;
-  dro_timer.every(100, dro_output);
+  //dro_timer.every(100, dro_output);
 }
 void loop()
 {

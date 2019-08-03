@@ -46,6 +46,10 @@ extern bool OkayFlag;
 void gcodes_init();
 void gcodes_tick();
 
+void gcodes_cancel_sync_callback();
+
+void SyncMotion(void (*callback)());
+
 /**********************
  * CONTROLS PROTOTYPES
  **********************/
