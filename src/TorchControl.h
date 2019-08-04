@@ -17,19 +17,32 @@ class TorchControl
     void init();
 
     /*
+      Engage the contacts for Arc Start and keep track of when it was started
+    */
+    void fire_torch();
+
+    /*
+      Turn of the arc!
+    */
+    void extinguish_torch();
+
+    /*
       Move the z axis incrementally, this is a non-blocking call.
 
       distance - distance to travel, sign is direction
+      feedrate - rate to travel at in units/sec
+      callback - A function that gets called every cycle tick, when it returns true the motion is halted
+          ^ ------ NULL can be passed if there's no reason to stop the move before it finishes
     */
-    void move_z_incremental(double distance, double feedrate);
+    void move_z_incremental(double distance, double feedrate, bool (*condition)(), void (*met)());
 
     /*
-      Block until Z move completets, this will call void loop internally so that it doesn't block everything
+      Cancel Move
     */
-    void wait_for_move_to_finish();
+    void cancel();
 
     /*
-      Tick torch control, needs to be called every loop cycle
+      Tick torch control, needs to be called every loop cycle.
     */
     void tick();
 

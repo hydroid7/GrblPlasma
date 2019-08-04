@@ -17,11 +17,25 @@ extern "C" {
 /**********************
  *      GLOBALS
  **********************/
-
+struct CallbackData {
+  double pierceHeight;
+  double pierceDelay;
+  double cutHeight;
+};
+extern CallbackData callback;
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-void probe_and_fire_torch();
+
+/* Condition met callbacks */
+void probe_torch();
+void retract_torch();
+void fire_torch();
+void light_torch_and_pierce_delay();
+
+
+/* Condition check callbacks */
+bool stop_on_probe_input();
 
 /**********************
  * CONTROLS PROTOTYPES

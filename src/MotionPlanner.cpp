@@ -65,12 +65,12 @@ void MotionPlanner::init()
 
   percentage_into_move = 0;
 
-  pinMode(1, OUTPUT);
-  pinMode(0, OUTPUT);
-  pinMode(3, OUTPUT);
-  pinMode(10, OUTPUT);
-  pinMode(2, OUTPUT);
-  pinMode(9, OUTPUT);
+  pinMode(X_DIR_PIN, OUTPUT);
+  pinMode(X_STEP_PIN, OUTPUT);
+  pinMode(Y1_DIR_PIN, OUTPUT);
+  pinMode(Y1_STEP_PIN, OUTPUT);
+  pinMode(Y2_DIR_PIN, OUTPUT);
+  pinMode(Y2_STEP_PIN, OUTPUT);
 
   if (motion_timer.begin(motion_timer_tick, 1))
   {
@@ -463,33 +463,33 @@ void MotionPlanner::motion_step_x(int dir)
 {
   if (dir > 0)
   {
-    digitalWrite(1, HIGH);
+    digitalWrite(X_DIR_PIN, HIGH);
   }
   else
   {
-    digitalWrite(1, LOW);
+    digitalWrite(X_DIR_PIN, LOW);
   }
   delayMicroseconds(20); //Delay for direction change
-  digitalWrite(0, LOW);
+  digitalWrite(X_STEP_PIN, LOW);
   delayMicroseconds(20);
-  digitalWrite(0, HIGH);
+  digitalWrite(X_STEP_PIN, HIGH);
 }
 void MotionPlanner::motion_step_y(int dir)
 {
   if (dir > 0)
   {
-    digitalWrite(3, LOW);
-    digitalWrite(10, LOW);
+    digitalWrite(Y1_DIR_PIN, LOW);
+    digitalWrite(Y2_DIR_PIN, LOW);
   }
   else
   {
-    digitalWrite(3, HIGH);
-    digitalWrite(10, HIGH);
+    digitalWrite(Y1_DIR_PIN, HIGH);
+    digitalWrite(Y2_DIR_PIN, HIGH);
   }
   delayMicroseconds(20); //Delay for direction change
-  digitalWrite(2, LOW);
-  digitalWrite(9, LOW);
+  digitalWrite(Y1_STEP_PIN, LOW);
+  digitalWrite(Y2_STEP_PIN, LOW);
   delayMicroseconds(20);
-  digitalWrite(2, HIGH);
-  digitalWrite(9, HIGH);
+  digitalWrite(Y1_STEP_PIN, HIGH);
+  digitalWrite(Y2_STEP_PIN, HIGH);
 }

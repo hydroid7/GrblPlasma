@@ -7,9 +7,28 @@
 #include "MotionSyncCallbacks.h"
 #include "Gcodes.h"
 
-void probe_and_fire_torch()
+CallbackData callback;
+
+/* condition check callbacks */
+bool stop_on_probe_input()
 {
-  printf(Serial, "Motion has halted, now touching off torch!\n");
-  delay(500);
-  printf(Serial, "Finished!\n");
+  if (Z_PROBE_PIN == LOW)
+  {
+    return true;
+  }
+  return false;
+}
+
+/* condition met callbacks */
+void probe_torch()
+{
+  torch.move_z_incremental(-10, Z_PROBE_FEEDRATE, stop_on_probe_input, retract_torch);
+}
+void retract_torch()
+{
+  torch.move_z_incremental(Z_FLOATING_HEAD_TAKEUP + 0.0625, Z_RAPID_FEEDRATE, NULL, light_torch_and_pierce_delay);
+}
+void light_torch_and_pierce_delay()
+{
+  
 }

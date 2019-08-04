@@ -20,10 +20,9 @@ void unrecognized(const char *command)
   printf(Serial, "\"%s\" is not a supported command!\n", command);
   PendingOkay = true;
 }
-void test()
+void fire_torch()
 {
-  printf(Serial, "Setting sync callback!\n");
-  SyncMotion(&probe_and_fire_torch);
+  SyncMotion(&probe_torch);
 }
 void abort()
 {
@@ -35,7 +34,8 @@ void soft_abort()
 {
   printf(Serial, "Soft!\n");
   motion.soft_abort();
-  //Also need to turn of torch and retract to clearance height!
+  torch.cancel();
+  torch.extinguish_torch();
 }
 void hold()
 {
@@ -87,7 +87,7 @@ void movez()
     double feed = atof(feedrate) / 60;
     double dist = atof(distance);
     printf(Serial, "Moving Z %.4f units at %.4f units/min\n", dist, feed * 60);
-    torch.move_z_incremental(dist, feed);
+    torch.move_z_incremental(dist, feed, NULL, NULL);
   }
   else
   {
@@ -239,7 +239,7 @@ void gcodes_init()
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);
   sCmd.addCommand("G1", line_move);
-  sCmd.addCommand("test", test);
+  sCmd.addCommand("fire_torch", fire_torch);
 
   sCmd.setDefaultHandler(unrecognized);
 
