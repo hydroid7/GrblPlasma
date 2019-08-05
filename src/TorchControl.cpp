@@ -165,11 +165,14 @@ void TorchControl::move_tick()
     {
       if (ConditionCallback() == true)
       {
+        StepsToGo = 0;
         ConditionCallback = NULL; //make sure the callback is cleared so it only runs once
         //The callback is responsable for stopping motion
-        if (ConditionMetCallback != NULL) ConditionMetCallback();
+        if (ConditionMetCallback != NULL)
+        {
+          ConditionMetCallback();
+        }
       }
-      return;
     }
     if (micros() > _Feedrate_Timestamp + _Feedrate_delay)
     {

@@ -21,6 +21,7 @@ struct CallbackData {
   double pierceHeight;
   double pierceDelay;
   double cutHeight;
+  double clearanceHeight;
 };
 extern CallbackData callback;
 /**********************
@@ -32,6 +33,7 @@ void probe_torch();
 void retract_torch();
 void fire_torch();
 void light_torch_and_pierce_delay();
+void torch_off_and_retract();
 
 
 /* Condition check callbacks */

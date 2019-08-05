@@ -18,7 +18,7 @@ TorchControl torch;
 void unrecognized(const char *command)
 {
   printf(Serial, "\"%s\" is not a supported command!\n", command);
-  PendingOkay = true;
+  OkayToSend();
 }
 void fire_torch()
 {
@@ -26,6 +26,11 @@ void fire_torch()
   callback.pierceDelay = 1.5;
   callback.pierceHeight = 0.0625;
   SyncMotion(&probe_torch);
+}
+void torch_off()
+{
+  callback.clearanceHeight = 2;
+  SyncMotion(&torch_off_and_retract);
 }
 void set_voltage()
 {
@@ -157,7 +162,7 @@ void rapid_move()
   t.z = 0;
   t.f = 600.0; //Rapid feedrate, units/min
   motion.push_target(t, RAPID_MOVE);
-  PendingOkay = true;
+  OkayToSend();
 }
 void line_move()
 {
@@ -233,7 +238,7 @@ void line_move()
   t.z = 0;
   t.f = f; //Rapid feedrate, units/min
   motion.push_target(t, LINE_MOVE);
-  PendingOkay = true;
+  OkayToSend();
 }
 
 /* End Gcode functions before here */
@@ -260,6 +265,7 @@ void gcodes_init()
   sCmd.addCommand("G0", rapid_move);
   sCmd.addCommand("G1", line_move);
   sCmd.addCommand("fire_torch", fire_torch);
+  sCmd.addCommand("torch_off", torch_off);
 
   sCmd.setDefaultHandler(unrecognized);
 
@@ -275,16 +281,16 @@ void gcodes_tick()
       PendingOkay = false;
       printf(Serial, "ok\n"); //Send an okay once there is room in the stack!
     }
-    else //WiatForMotionSynce == true
+  }
+  if (WaitForMotionSync == true)
+  {
+    //printf(Serial, "Waiting for motion to sync!\n");
+    //Stop sending lines until the MoveStack is empty and the machine is not in motion anymore
+    if (motion.is_in_motion() == false && MoveStack->isEmpty(MoveStack))
     {
-      //printf(Serial, "Waiting for motion to sync!\n");
-      //Stop sending lines until the MoveStack is empty and the machine is not in motion anymore
-      if (motion.is_in_motion() == false && MoveStack->isEmpty(MoveStack))
-      {
-        WaitForMotionSync = false; //The machine is at the last position sent!
-        //printf(Serial, "Motion is synced!\n");
-        if (MotionSyncCallback != NULL)  MotionSyncCallback();
-      }
+      WaitForMotionSync = false; //The machine is at the last position sent!
+      //printf(Serial, "Motion is synced!\n");
+      if (MotionSyncCallback != NULL)  MotionSyncCallback();
     }
   }
   sCmd.readSerial();
@@ -293,5 +299,9 @@ void SyncMotion(void (*callback)())
 {
   MotionSyncCallback = callback;
   WaitForMotionSync = true;
+  PendingOkay = false; //The last callback that fires should send the okay!
+}
+void OkayToSend()
+{
   PendingOkay = true;
 }

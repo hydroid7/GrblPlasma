@@ -49,6 +49,7 @@ void gcodes_tick();
 void gcodes_cancel_sync_callback();
 
 void SyncMotion(void (*callback)());
+void OkayToSend();
 
 /**********************
  * CONTROLS PROTOTYPES

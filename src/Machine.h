@@ -17,6 +17,6 @@
 #define Z_STEP_PIN 4
 #define Z_DIR_PIN 5
 #define Z_PROBE_PIN 27
-#define Z_PROBE_FEEDRATE (10 / 60) //Set the feedrate to 10 inches per minute
-#define Z_RAPID_FEEDRATE (75 / 60)
-#define Z_FLOATING_HEAD_TAKEUP 0.1
+#define Z_PROBE_FEEDRATE 1.5 //Set the feedrate to 10 inches per minute
+#define Z_RAPID_FEEDRATE 2
+#define Z_FLOATING_HEAD_TAKEUP 0.2
