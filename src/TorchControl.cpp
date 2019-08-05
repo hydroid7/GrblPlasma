@@ -30,13 +30,12 @@ TorchControl::TorchControl()
   thc.arc_voltage = 0;
   thc.set_voltage = 0;
   //thc.velocity_tolorance = 0.083; //Must be within X inches/min to are target velocity before ATHC starts to comp Z height
-  thc.voltage_tolorance = 0.5; //If we are whithin X volts of our target voltage, don't make Z adjustments!
-  thc.comp_velocity = 0.083; //IPM to make adjustments at.
-  thc.enabled = false;
+  thc.voltage_tolorance = 4; //If we are whithin X volts of our target voltage, don't make Z adjustments!
+  thc.comp_velocity = 0.83333; //IPS to make adjustments at.
+  thc.enabled = true;
 }
 void TorchControl::init()
 {
-  analogReadResolution(13);
   pinMode(Z_STEP_PIN, OUTPUT); //Z Step
   pinMode(Z_DIR_PIN, OUTPUT); //Z Dir
   pinMode(ARC_START_PIN, OUTPUT); //Arc Start
@@ -58,6 +57,7 @@ void TorchControl::init()
   thc.readIndex = 0;
   thc.total = 0;
   thc.average = 0;
+  thc.torch_on = false;
 }
 void TorchControl::cancel()
 {
@@ -119,22 +119,26 @@ bool TorchControl::IsInTolerance(double a, double b, double t)
 void TorchControl::sample_voltage()
 {
   thc.total = thc.total - thc.readings[thc.readIndex];
-  thc.readings[thc.readIndex] = (double)analogRead(ARC_VOLTAGE_PIN);
+  thc.readings[thc.readIndex] = analogRead(ARC_VOLTAGE_PIN);
   thc.total = thc.total + thc.readings[thc.readIndex];
   thc.readIndex++;
   if (thc.readIndex >= thc.numReadings) {
     thc.readIndex = 0;
   }
-  double actual_voltage = mapdouble((thc.total / thc.numReadings), 0.00, 8195, 0.00, 3.3); //Voltage read on pin, this is after our voltage divider
-  actual_voltage *= 3.199; //Scale for our voltage divider
-  thc.arc_voltage = actual_voltage * 50; //Scaled to 50:1
+  double adc_reading = (double)(thc.total / thc.numReadings);
+  /*
+    603 adc = 0V
+    330 adc = 3V
+  */
+  double actual_voltage = mapdouble(adc_reading, 603, 0, 0.00, 7);
+  thc.arc_voltage = actual_voltage * 50.00; //Scaled to 50:1
 }
 void TorchControl::tick()
 {
   sample_voltage();
-  if (thc.enabled && thc.set_voltage > 10)
+  if (thc.torch_on == true && thc.enabled == true && thc.set_voltage > 10 && millis() > (torch_fired_timestamp + (1.5 * 1000)))
   {
-    if (digitalRead(Z_PROBE_PIN) == LOW) //Make sure we have our ARC_OK signal, otherwise something is wrong and we should not comp torch!
+    if (digitalRead(ARC_OK_PIN) == LOW) //Make sure we have our ARC_OK signal, otherwise something is wrong and we should not comp torch!
     {
       if (IsInTolerance(thc.arc_voltage, thc.set_voltage, thc.voltage_tolorance)) //Check to see if we are in tolorance
       {
@@ -212,10 +216,12 @@ void TorchControl::step_z(int dir)
 }
 void TorchControl::fire_torch()
 {
+  thc.torch_on = true;
   torch_fired_timestamp = millis();
   digitalWrite(28, HIGH);
 }
 void TorchControl::extinguish_torch()
 {
+  thc.torch_on = false;
   digitalWrite(28, LOW);
 }

@@ -46,6 +46,7 @@ void set_voltage()
   {
     printf(Serial, "Command usage: set_voltage <voltage>\n");
   }
+  OkayToSend();
 }
 void abort()
 {
@@ -258,7 +259,6 @@ void gcodes_init()
   sCmd.addCommand("abort", abort);
   sCmd.addCommand("soft_abort", soft_abort);
   sCmd.addCommand("movez", movez);
-  sCmd.addCommand("set_voltage", set_voltage);
   
 
   //All Gcode commands below here
@@ -266,6 +266,7 @@ void gcodes_init()
   sCmd.addCommand("G1", line_move);
   sCmd.addCommand("fire_torch", fire_torch);
   sCmd.addCommand("torch_off", torch_off);
+  sCmd.addCommand("set_voltage", set_voltage);
 
   sCmd.setDefaultHandler(unrecognized);
 

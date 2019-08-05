@@ -6,7 +6,7 @@
 
 #include "Arduino.h"
 
-#define NUMBER_OF_READINGS 2000
+#define NUMBER_OF_READINGS 750
 
 struct THC_Data {
     double arc_voltage;
@@ -15,9 +15,10 @@ struct THC_Data {
     double voltage_tolorance; //If we are whithin X volts of our target voltage, don't make Z adjustments!
     double comp_velocity; //IPM to make adjustments at.
     bool enabled;
+    bool torch_on;
 
     int numReadings; //Number of readings to average from
-    double readings[NUMBER_OF_READINGS];      // the readings from the analog input
+    int readings[NUMBER_OF_READINGS];      // the readings from the analog input
     int readIndex;              // the index of the current reading
     double total;               // the running total
     double average;             // the average
