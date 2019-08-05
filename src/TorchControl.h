@@ -6,6 +6,23 @@
 
 #include "Arduino.h"
 
+#define NUMBER_OF_READINGS 2000
+
+struct THC_Data {
+    double arc_voltage;
+    double set_voltage;
+    //double velocity_tolorance; //Must be within X inches/min to are target velocity before ATHC starts to comp Z height
+    double voltage_tolorance; //If we are whithin X volts of our target voltage, don't make Z adjustments!
+    double comp_velocity; //IPM to make adjustments at.
+    bool enabled;
+
+    int numReadings; //Number of readings to average from
+    double readings[NUMBER_OF_READINGS];      // the readings from the analog input
+    int readIndex;              // the index of the current reading
+    double total;               // the running total
+    double average;             // the average
+};
+
 class TorchControl
 {
   public:
@@ -35,6 +52,21 @@ class TorchControl
           ^ ------ NULL can be passed if there's no reason to stop the move before it finishes
     */
     void move_z_incremental(double distance, double feedrate, bool (*condition)(), void (*met)());
+
+    /*
+      Return the current measured and scaled arc voltage
+    */
+    double get_arc_voltage();
+
+    /*
+      Return the currently set arc voltage
+    */
+    double get_set_voltage();
+
+    /*
+      Sets the ATHC taget voltage
+    */
+    void set_arc_voltage(double volts);
 
     /*
       Cancel Move
@@ -71,6 +103,22 @@ class TorchControl
       Calculate feed_delay given feedrate in units/sec
     */
     unsigned long cycle_frequency_from_feedrate(double feedrate);
+
+    /*
+      mapfloat
+    */
+    double mapdouble(double x, double in_min, double in_max, double out_min, double out_max);
+
+    /*
+      Check if two variables are within a given tolorance
+    */
+    bool IsInTolerance(double a, double b, double t);
+
+
+    /*
+      sample and average our voltage reading
+    */
+    void sample_voltage();
 
 };
 

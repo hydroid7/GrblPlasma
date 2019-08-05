@@ -24,6 +24,21 @@ void fire_torch()
 {
   SyncMotion(&probe_torch);
 }
+void set_voltage()
+{
+  char *voltage = sCmd.next();
+
+  if (voltage != NULL)
+  {
+    double volts = atof(voltage);
+    printf(Serial, "Setting ATHC target voltage to %.4f\n", volts);
+    torch.set_arc_voltage(volts);
+  }
+  else
+  {
+    printf(Serial, "Command usage: set_voltage <voltage>\n");
+  }
+}
 void abort()
 {
   printf(Serial, "Abort!\n");
@@ -235,6 +250,8 @@ void gcodes_init()
   sCmd.addCommand("abort", abort);
   sCmd.addCommand("soft_abort", soft_abort);
   sCmd.addCommand("movez", movez);
+  sCmd.addCommand("set_voltage", set_voltage);
+  
 
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);

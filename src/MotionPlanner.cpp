@@ -143,6 +143,14 @@ XYZ_Double MotionPlanner::get_current_position()
   pos.f = sqrt(pow((CurrentVelocity.x), 2) + pow(CurrentVelocity.y, 2)) * 60;
   return pos;
 }
+XYZ_Double MotionPlanner::get_current_velocity()
+{
+  XYZ_Double vel;
+  vel.x = (double)CurrentVelocity.x;
+  vel.y = (double)CurrentVelocity.y;
+  vel.f = sqrt(pow((vel.x), 2) + pow(vel.y, 2)) * 60;
+  return vel;
+}
 bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
 {
   if (MoveStack->isFull(MoveStack))
