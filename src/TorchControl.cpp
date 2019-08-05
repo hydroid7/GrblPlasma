@@ -125,7 +125,8 @@ void TorchControl::sample_voltage()
   if (thc.readIndex >= thc.numReadings) {
     thc.readIndex = 0;
   }
-  double actual_voltage = mapdouble((thc.total / thc.numReadings), 0.00, 8195, 0.00, 9); //Calibrated by hooking 3 volt battery to input. This input should be pretty close all the way to 18 volts
+  double actual_voltage = mapdouble((thc.total / thc.numReadings), 0.00, 8195, 0.00, 3.3); //Voltage read on pin, this is after our voltage divider
+  actual_voltage *= 3.199; //Scale for our voltage divider
   thc.arc_voltage = actual_voltage * 50; //Scaled to 50:1
 }
 void TorchControl::tick()
