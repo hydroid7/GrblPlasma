@@ -22,6 +22,9 @@ void unrecognized(const char *command)
 }
 void fire_torch()
 {
+  callback.cutHeight = 0.085;
+  callback.pierceDelay = 1.5;
+  callback.pierceHeight = 0.0625;
   SyncMotion(&probe_torch);
 }
 void set_voltage()
