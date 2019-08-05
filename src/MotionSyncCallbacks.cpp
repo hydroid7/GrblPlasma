@@ -56,7 +56,7 @@ void light_torch_and_pierce_delay()
 {
   printf(Serial, "(light_torch_and_pierce_delay)\n");
   torch.fire_torch();
-  delay(callback.pierceDelay);
+  delay(callback.pierceDelay * 1000);
   if (digitalRead(ARC_OK_PIN) == LOW)
   {
     printf(Serial, "\t-> Has arc okay signal\n");
