@@ -26,12 +26,12 @@ bool dro_output(void *)
   XYZ_Double pos = motion.get_current_position();
   if (motion.is_in_motion()) //Are we currently in motion?
   {
-    printf(Serial, "DRO: X_MCS=%.4f Y_MCS=%.4f VELOCITY=%.4f UNITS=INCH THC_ARC_VOLTAGE=%.4f THC_SET_VOLTAGE=%.4f STATUS=RUN\n", pos.x, pos.y, pos.f, torch.get_arc_voltage(), torch.get_set_voltage());
+    printf(Serial, "DRO: X_MCS=%.4f Y_MCS=%.4f VELOCITY=%.1f UNITS=INCH THC_ARC_VOLTAGE=%.1f THC_SET_VOLTAGE=%.1f STATUS=RUN\n", pos.x, pos.y, pos.f, torch.get_arc_voltage(), torch.get_set_voltage());
     dro_stop_report = false;
   }
   else if (dro_stop_report == false) //Run this once when motion finishes
   {
-    printf(Serial, "DRO: X_MCS=%.4f Y_MCS=%.4f VELOCITY=%.4f UNITS=INCH THC_ARC_VOLTAGE=%.4f THC_SET_VOLTAGE=%.4f STATUS=HALT\n", pos.x, pos.y, pos.f, torch.get_arc_voltage(), torch.get_set_voltage());
+    printf(Serial, "DRO: X_MCS=%.4f Y_MCS=%.4f VELOCITY=%.1f UNITS=INCH THC_ARC_VOLTAGE=%.4f THC_SET_VOLTAGE=%.4f STATUS=HALT\n", pos.x, pos.y, pos.f, torch.get_arc_voltage(), torch.get_set_voltage());
     dro_stop_report = true;
   }
   return true; // repeat? true

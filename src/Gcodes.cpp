@@ -280,7 +280,7 @@ void gcodes_tick()
     if (WaitForMotionSync == false) //We are not waiting for motion to sync, keep sending lines
     {
       PendingOkay = false;
-      printf(Serial, "ok\n"); //Send an okay once there is room in the stack!
+      printf(Serial, "ok: %d\n", MoveStack->numElements(MoveStack)); //Send an okay once there is room in the stack!
     }
   }
   if (WaitForMotionSync == true)
