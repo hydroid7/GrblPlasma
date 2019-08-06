@@ -255,7 +255,7 @@ void line_move()
 /* End Gcode functions before here */
 void gcodes_init()
 {
-  Serial.begin(500000);
+  Serial.begin(250000);
 
   //All special commands below here
   sCmd.addCommand("init", init);
