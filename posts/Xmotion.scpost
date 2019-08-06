@@ -1,0 +1,100 @@
+function OnAbout(event)
+   ctrl = event:GetTextCtrl()
+   ctrl:AppendText("Xmotion Gen3 plasma post processor\n")
+   ctrl:AppendText("\n")
+   ctrl:AppendText("Non-Modal G-codes and coordinates\n")
+   ctrl:AppendText("Comments enclosed with ( and )\n")
+   ctrl:AppendText("Incremental IJ\n")
+end
+
+--  revision 7/8/2019
+--  Changed for Xmotion Gen3 Control
+
+--  revision 3/2/07
+--  Removed final safety move. This is now done in SheetCam
+
+--   revision 7/10/04
+--   Added new arc handling
+
+--   Created 30/3/2005
+--   based on Mach2.post
+
+
+
+function OnInit()
+   bigArcs = 1 --stitch arc segments together
+   minArcSize = 0.05 --arcs smaller than this are converted to moves
+   post.Text ("\nset_voltage 30\n") -- Turn on Torch Height Control and Set voltage to 80 volts
+end
+
+function OnNewLine()
+
+end
+
+function OnFinish()
+   post.Text ("M30\n")
+end
+
+function OnRapid()
+   if((endX * scale) < 1000) then
+      post.Text ("G0 X")
+      post.Number (endX * scale, "0.0000")
+      post.Text (" Y")
+      post.Number (endY * scale, "0.0000")
+      post.Eol()
+   else
+
+   end  
+end
+
+function OnMove()
+
+   if((endX * scale) < 1000) then
+      post.Text ("G1 X")
+      post.Number (endX * scale, "0.0000")
+      post.Text (" Y")
+      post.Number (endY * scale, "0.0000")
+      post.Text (" F")
+      post.Number (feedRate * scale, "0.0000")
+      post.Eol()
+   else
+
+   end
+end
+
+function OnArc()
+   post.ArcAsMoves(0.02)
+end
+
+function OnPenDown()
+   post.Text ("fire_torch ")
+   post.Number (pierceHeight * scale, "0.0000")
+   post.Text (" ")
+   post.Number (pierceDelay, "0.###")
+   post.Text (" ")
+   post.Number (cutHeight * scale, "0.0000")
+   post.Eol();
+end
+
+function OnPenUp()
+   post.Text ("torch_off")
+   post.Eol();
+end
+
+function OnNewOperation()
+   
+end
+
+function OnComment()
+ 
+end
+
+
+function OnNewPart()
+   
+end
+
+
+function OnDrill()
+   
+end
