@@ -26,6 +26,7 @@ TorchControl::TorchControl()
   StepsToGo = 0;
   StepDir = 0;
   run = false;
+  //Test
 
   thc.arc_voltage = 0;
   thc.set_voltage = 0;

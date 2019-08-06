@@ -22,9 +22,19 @@ void unrecognized(const char *command)
 }
 void fire_torch()
 {
-  callback.cutHeight = 0.085;
-  callback.pierceDelay = 1.5;
+  //Load some default values that will work most of the time
   callback.pierceHeight = 0.0625;
+  callback.pierceDelay = 1.5;
+  callback.cutHeight = 0.085;
+
+  char *pierceHeight = sCmd.next();
+  char *pierceDelay = sCmd.next();
+  char *cutHeight = sCmd.next();
+
+  if (pierceHeight != NULL) callback.pierceHeight = atof(pierceHeight);
+  if (pierceDelay != NULL) callback.pierceDelay = atof(pierceDelay);
+  if (cutHeight != NULL) callback.cutHeight = atof(cutHeight);
+
   SyncMotion(&probe_torch);
 }
 void torch_off()
