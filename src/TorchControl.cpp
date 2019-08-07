@@ -137,7 +137,7 @@ void TorchControl::sample_voltage()
 void TorchControl::tick()
 {
   sample_voltage();
-  if (thc.torch_on == true && thc.enabled == true && thc.set_voltage > 10 && millis() > (torch_fired_timestamp + (3 * 1000)))
+  if (thc.torch_on == true && thc.enabled == true && thc.set_voltage > 10 && thc.arc_voltage > 10 && millis() > (torch_fired_timestamp + (3 * 1000)))
   {
     if (digitalRead(ARC_OK_PIN) == LOW) //Make sure we have our ARC_OK signal, otherwise something is wrong and we should not comp torch!
     {
