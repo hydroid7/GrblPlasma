@@ -154,6 +154,22 @@ void MotionPlanner::abort()
   Motion.pendingFeedhold = false;
   Motion.feedholdActive = false;
 }
+XYZ_Long MotionPlanner::get_last_moves_target_steps()
+{
+  XYZ_Long pos;
+  if (MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1) != NULL) //There moves on the stack
+  {
+      struct Move_Data *move = (Move_Data*)MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1);
+      pos.x = move->target.x;
+      pos.y = move->target.y;
+  }
+  else //There are no moves on the stack
+  {
+    pos.x = CurrentMove.target.x;
+    pos.y = CurrentMove.target.y;
+  }
+  return pos;
+}
 XYZ_Double MotionPlanner::get_last_moves_target()
 {
   XYZ_Double pos;
@@ -218,10 +234,19 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
 
     move.accel_marker = motion_calculate_accel_marker(dominant_accel, peak_feedrate); //We should not be accelerating after this marker compared to distance in.
     move.deccel_marker = motion_calculate_accel_marker(dominant_accel, peak_feedrate); //We should not be accelerating after this marker compared to distance left.
-    printf(Serial, "Peak Feedrate is (unit/min): %.4f, Accel Marker is: %.4f, Deccel Marker is: %.4f\n", peak_feedrate * 60, move.accel_marker, move.deccel_marker);
+    //printf(Serial, "Peak Feedrate is (unit/min): %.4f, Accel Marker is: %.4f, Deccel Marker is: %.4f\n", peak_feedrate * 60, move.accel_marker, move.deccel_marker);
     move.entry_velocity = MIN_FEED_RATE;
     move.exit_velocity = MIN_FEED_RATE;
-    int move_index = MoveStack->add(MoveStack, &move); //Push the move to the stack!
+    if (MoveStack->numElements(MoveStack) > 0) //We have pending moves on the stack, need to get "current_position" from the last stack moves endpoint to calculate this target from
+    {
+      XYZ_Long cur_pos = get_last_moves_target_steps();
+      move.Motion = motion_calculate_target(cur_pos, move.target);
+    }
+    else //There are no moves on the stack, use are actual "current_position"
+    {
+      move.Motion = motion_calculate_target(CurrentPosition, move.target);
+    }
+    MoveStack->add(MoveStack, &move); //Push the move to the stack!
     if (Motion.run == false) //If we are not currently in motion, set our feedrate to min feed
     {
       motion_set_feedrate(move.entry_velocity); //Minimum feed of 1 inch/min
@@ -259,7 +284,7 @@ void MotionPlanner::motion_set_feedrate(double feed)
   CurrentVelocity.y = y_dist_inches / move_duration_sec;
   //printf(Serial, "Feed Delay is: %ld\n", _Feedrate_delay);
 }
-void MotionPlanner::motion_set_target()
+void MotionPlanner::motion_set_target() //Now Obsolete
 {
   TargetPosition.x = CurrentMove.target.x;
   TargetPosition.y = CurrentMove.target.y;
@@ -268,6 +293,16 @@ void MotionPlanner::motion_set_target()
   Motion.err = (Motion.dx>Motion.dy ? Motion.dx : -Motion.dy)/2;
   Motion.x_stg = abs(Motion.dx);
   Motion.y_stg = abs(Motion.dy);
+}
+Bresenham_Data MotionPlanner::motion_calculate_target(XYZ_Long cur_pos, XYZ_Long tar_pos)
+{
+  Bresenham_Data ret;
+  ret.dx = abs(tar_pos.x - cur_pos.x), ret.sx = cur_pos.x < tar_pos.x ? 1 : -1;
+  ret.dy = abs(tar_pos.y - cur_pos.y), ret.sy = cur_pos.y < tar_pos.y ? 1 : -1;
+  ret.err = (ret.dx>Motion.dy ? ret.dx : -ret.dy)/2;
+  ret.x_stg = abs(ret.dx);
+  ret.y_stg = abs(ret.dy);
+  return ret;
 }
 double MotionPlanner::motion_calculate_accel_marker(double accel_rate, double target_velocity)
 {
@@ -466,8 +501,16 @@ void MotionPlanner::motion_tick()
         if (MoveStack->numElements(MoveStack) > 0) //There are pending moves on the stack!
         {
           MoveStack->pull(MoveStack, &CurrentMove);
-          motion_set_target();
-          motion_plan_moves_for_continuous_motion();
+          TargetPosition.x = CurrentMove.target.x;
+          TargetPosition.y = CurrentMove.target.y;
+          Motion.dx = CurrentMove.Motion.dx;
+          Motion.dy = CurrentMove.Motion.dy;
+          Motion.sx = CurrentMove.Motion.sx;
+          Motion.sy = CurrentMove.Motion.sy;
+          Motion.err = CurrentMove.Motion.err;
+          Motion.x_stg = CurrentMove.Motion.x_stg;
+          Motion.y_stg = CurrentMove.Motion.y_stg;
+
         }
         else
         {

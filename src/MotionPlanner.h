@@ -47,6 +47,7 @@ struct Bresenham_Data {
 };
 
 struct Move_Data {
+   Bresenham_Data Motion;
    XYZ_Long target;
    /*
     Use distance markers to deterine when acceleration/decceleration need to begin
@@ -109,9 +110,14 @@ class MotionPlanner
     XYZ_Double get_current_position();
 
     /*
-      Returns a XYZ_Double with the target position of the last move on the stack
+      Returns a XYZ_Double with the target position of the last move on the stack in scaled units
     */
     XYZ_Double get_last_moves_target();
+
+    /*
+      Returns a XYZ_Long with the target position of the last move on the stack in step units
+    */
+    XYZ_Long get_last_moves_target_steps();
 
     /*
       Returns a XYZ_Double with current axis velocities
@@ -156,8 +162,19 @@ class MotionPlanner
 
     /*
       Sets the new target position. Reads CurrentMove to get X,Y target data and sets the breseham variables in Move
+
+      Obsolete: this used to be called from the timer ISR after a move finishes, but causes a short stop between moves at feedrates which have a delay shorter than
+      the amount of time it takes to caclulate the new bresenham data. Now we pre-cacluate this data and it's stored in the Move_Data
     */
     void motion_set_target();
+
+    /*
+      Pre-Calculates Motion data, called by push_target
+
+      cur_pos - XYZ_Long of the "currrent_pos" in the move stack
+      tar_pos - XYZ_Long of the new "target_pos" 
+    */
+    Bresenham_Data motion_calculate_target(XYZ_Long cur_pos, XYZ_Long tar_pos);
 
     /*
       Calculates the feed delay required to throttle the bresehm loop to the desired feedrate
