@@ -140,6 +140,11 @@ class MotionPlanner
     */
     void motion_tick();
 
+    /*
+      This is called from main loop
+    */
+    void tick();
+
 
 
   private:

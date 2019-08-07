@@ -378,19 +378,8 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion_junk()
     this_move = (Move_Data*)MoveStack->peek(MoveStack, move_index+1);
   }
 }
-void MotionPlanner::motion_plan_moves_for_continuous_motion()
+void MotionPlanner::tick()
 {
-  /*
-    First pass - We need to iterate through all the moves on the stack and save the "current_move" pointer to an array when our vector angle change is more than x degrees.
-    Moves that are more than x degrees need to slow down before entering "next_move". Set all the accel and deccel markers to -1 so that there won't be any acceleration or
-    decceleration along those moves.
-
-    Second pass -
-  */
-}
-void MotionPlanner::motion_tick()
-{
-  noInterrupts();
   if (Motion.run == true)
   {
     if (millis() > _Feed_Sample_Timestamp + FEED_RAMP_UPDATE_INTERVAL)
@@ -483,6 +472,23 @@ void MotionPlanner::motion_tick()
       }
       _Feed_Sample_Timestamp = millis();
     }
+  }
+}
+void MotionPlanner::motion_plan_moves_for_continuous_motion()
+{
+  /*
+    First pass - We need to iterate through all the moves on the stack and save the "current_move" pointer to an array when our vector angle change is more than x degrees.
+    Moves that are more than x degrees need to slow down before entering "next_move". Set all the accel and deccel markers to -1 so that there won't be any acceleration or
+    decceleration along those moves.
+
+    Second pass -
+  */
+}
+void MotionPlanner::motion_tick()
+{
+  noInterrupts();
+  if (Motion.run == true)
+  {
     if (micros() > _Feedrate_Timestamp + _Feedrate_delay)
     {
       int dominent_axis_stg = Motion.x_stg;
