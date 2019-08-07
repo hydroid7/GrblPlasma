@@ -37,6 +37,10 @@ bool MotionPlanner::is_in_motion()
 }
 void MotionPlanner::dump_current_move_to_serial()
 {
+  printf(Serial, "CurrentPosition.x = %ld\n", CurrentPosition.x);
+  printf(Serial, "CurrentPosition.y = %ld\n", CurrentPosition.y);
+  printf(Serial, "TargetPosition.x = %ld\n", TargetPosition.x);
+  printf(Serial, "TargetPosition.y = %ld\n", TargetPosition.y);
   if (Motion.run == true)
   {
     printf(Serial, "Motion.run = true\n");
@@ -49,7 +53,6 @@ void MotionPlanner::dump_current_move_to_serial()
   printf(Serial, "Motion.dy = %ld\n", Motion.dy);
   printf(Serial, "Motion.sx = %ld\n", Motion.sx);
   printf(Serial, "Motion.sy = %ld\n", Motion.sy);
-  printf(Serial, "Motion.dx = %ld\n", Motion.dx);
   if (Motion.pendingFeedhold == true)
   {
     printf(Serial, "Motion.pendingFeedhold = true\n");
@@ -139,17 +142,18 @@ void MotionPlanner::soft_abort()
 }
 void MotionPlanner::abort()
 {
+  printf(Serial, "(MotionPlanner::abort()) Aborting move\n");
   /*if (Motion.run == true) //Only add a pending feedhold if we are in motion
   {
     Motion.pendingFeedhold = true;
   }*/
   struct Move_Data move;
   while (MoveStack->pull(MoveStack, &move)); //This just clears the stack from the tail to the head
-  Motion.dx = 0, Motion.sx = 0;
-  Motion.dy = 0, Motion.sy = 0;
-  Motion.err = 0;
-  Motion.x_stg = 0;
-  Motion.y_stg = 0;
+  //Motion.dx = 0, Motion.sx = 0;
+  //Motion.dy = 0, Motion.sy = 0;
+  //Motion.err = 0;
+  //Motion.x_stg = 0;
+  //Motion.y_stg = 0;
   Motion.run = true;
   Motion.pendingFeedhold = false;
   Motion.feedholdActive = false;
@@ -242,10 +246,12 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
       XYZ_Long cur_pos = get_last_moves_target_steps();
       move.Motion = motion_calculate_target(cur_pos, move.target);
     }
-    else //There are no moves on the stack, use are actual "current_position"
+    else //There are no moves on the stack, use our actual "target_position"
     {
+      //printf(Serial, "No moves on stack, calculating target from current position: X%ld Y%ld\n", CurrentPosition.x, CurrentPosition.y);
       move.Motion = motion_calculate_target(CurrentPosition, move.target);
     }
+    //move.Motion = motion_calculate_target(get_last_moves_target_steps(), move.target);
     MoveStack->add(MoveStack, &move); //Push the move to the stack!
     if (Motion.run == false) //If we are not currently in motion, set our feedrate to min feed
     {
@@ -461,6 +467,7 @@ void MotionPlanner::tick()
             if (Motion.pendingSoftAbort == true)
             {
               Motion.pendingSoftAbort = false;
+              printf(Serial, "(MotionPlanner::tick()) Calling abort!\n");
               abort();
             }
           }
@@ -516,7 +523,6 @@ void MotionPlanner::motion_tick()
           Motion.err = CurrentMove.Motion.err;
           Motion.x_stg = CurrentMove.Motion.x_stg;
           Motion.y_stg = CurrentMove.Motion.y_stg;
-
         }
         else
         {
