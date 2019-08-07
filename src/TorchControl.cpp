@@ -63,6 +63,7 @@ void TorchControl::init()
 void TorchControl::cancel()
 {
   run = false;
+  StepsToGo = 0;
 }
 double TorchControl::get_arc_voltage()
 {

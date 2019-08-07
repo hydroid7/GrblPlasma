@@ -24,8 +24,8 @@ MotionPlanner::MotionPlanner()
   _Feed_Jerk.x = 0.05;
   _Feed_Jerk.y = 0.05;
 
-  _Feed_Accel.x = 7;
-  _Feed_Accel.y = 6;
+  _Feed_Accel.x = 15;
+  _Feed_Accel.y = 10;
 
   _Feed_Sample_Timestamp = 0; //This is in millis()
   _Feedrate_Timestamp = 0; //This is in micros()
@@ -34,6 +34,43 @@ MotionPlanner::MotionPlanner()
 bool MotionPlanner::is_in_motion()
 {
   return Motion.run;
+}
+void MotionPlanner::dump_current_move_to_serial()
+{
+  if (Motion.run == true)
+  {
+    printf(Serial, "Motion.run = true\n");
+  }
+  else
+  {
+    printf(Serial, "Motion.run = false\n");
+  }
+  printf(Serial, "Motion.dx = %ld\n", Motion.dx);
+  printf(Serial, "Motion.dy = %ld\n", Motion.dy);
+  printf(Serial, "Motion.sx = %ld\n", Motion.sx);
+  printf(Serial, "Motion.sy = %ld\n", Motion.sy);
+  printf(Serial, "Motion.dx = %ld\n", Motion.dx);
+  if (Motion.pendingFeedhold == true)
+  {
+    printf(Serial, "Motion.pendingFeedhold = true\n");
+  }
+  else
+  {
+    printf(Serial, "Motion.pendingFeedhold = false\n");
+  }
+  if (Motion.feedholdActive == true)
+  {
+    printf(Serial, "Motion.feedholdActive = true\n");
+  }
+  else
+  {
+    printf(Serial, "Motion.feedholdActive = false\n");
+  }
+  printf(Serial, "CurrentMove.target.x = %ld\n", CurrentMove.target.x);
+  printf(Serial, "CurrentMove.target.y = %ld\n", CurrentMove.target.y);
+  printf(Serial, "CurrentMove.target.z = %ld\n", CurrentMove.target.z);
+  printf(Serial, "CurrentMove.target.f = %ld\n", CurrentMove.target.f);
+  printf(Serial, "_Feedrate_delay = %ld\n", _Feedrate_delay);
 }
 void MotionPlanner::init()
 {

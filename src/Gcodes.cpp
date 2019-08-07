@@ -92,6 +92,9 @@ void hello()
 }
 void dump_moves()
 {
+  printf(Serial, "*************** Current move ******************\n");
+  motion.dump_current_move_to_serial();
+  
   int number_of_moves = MoveStack->numElements(MoveStack);
   printf(Serial, "There are %d move/s currently on the stack\n", number_of_moves);
   for (int x = 0; x < number_of_moves; x++)

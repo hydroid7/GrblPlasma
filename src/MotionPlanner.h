@@ -120,6 +120,11 @@ class MotionPlanner
     XYZ_Double get_current_velocity();
 
     /*
+      Used for debugging purposes. Dumps all the data for current move
+    */
+    void dump_current_move_to_serial();
+
+    /*
       Return whether or not we are in motion
     */
     bool is_in_motion();
