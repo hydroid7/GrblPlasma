@@ -142,7 +142,8 @@ void MotionPlanner::soft_abort()
 }
 void MotionPlanner::abort()
 {
-  printf(Serial, "(MotionPlanner::abort()) Aborting move\n");
+  printf(Serial, "(MotionPlanner::abort()) Aborting all moves\n");
+  noInterrupts();
   /*if (Motion.run == true) //Only add a pending feedhold if we are in motion
   {
     Motion.pendingFeedhold = true;
@@ -154,9 +155,10 @@ void MotionPlanner::abort()
   //Motion.err = 0;
   //Motion.x_stg = 0;
   //Motion.y_stg = 0;
-  Motion.run = true;
+  Motion.run = false;
   Motion.pendingFeedhold = false;
   Motion.feedholdActive = false;
+  interrupts();
 }
 XYZ_Long MotionPlanner::get_last_moves_target_steps()
 {
