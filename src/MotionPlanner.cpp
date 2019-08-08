@@ -143,34 +143,17 @@ void MotionPlanner::run()
 }
 void MotionPlanner::sync_finished()
 {
-  if (MoveStack->pull(MoveStack, &CurrentMove)) //There are pending moves on the stack!
-  {
-    if (CurrentMove.move_type == SYNC_MOVE)
-    {
-      /* Since we are a sync move, we need to stop motion and wait for our sync callback to be called from tick(). sync_finish() will resume motion */
-      Motion.run = false;
-    }
-    else
-    {
-      TargetPosition.x = CurrentMove.target.x;
-      TargetPosition.y = CurrentMove.target.y;
-      Motion.dx = CurrentMove.Motion.dx;
-      Motion.dy = CurrentMove.Motion.dy;
-      Motion.sx = CurrentMove.Motion.sx;
-      Motion.sy = CurrentMove.Motion.sy;
-      Motion.err = CurrentMove.Motion.err;
-      Motion.x_stg = CurrentMove.Motion.x_stg;
-      Motion.y_stg = CurrentMove.Motion.y_stg;
-      Motion.run = true;
-    }        
-  }
-  else
-  {
-    CurrentVelocity.x = 0;
-    CurrentVelocity.y = 0;
-    abort();
-    Motion.run = false;
-  }
+  noInterrupts();
+  Motion.dx = 0;
+  Motion.dy = 0;
+  Motion.sx = 0;
+  Motion.sy = 0;
+  Motion.err = 0;
+  Motion.x_stg = 0;
+  Motion.y_stg = 0;
+  Motion.run = true;
+  CurrentMove.waiting_for_sync = false;
+  interrupts();
 }
 void MotionPlanner::soft_abort()
 {
@@ -192,6 +175,7 @@ void MotionPlanner::abort()
   Motion.pendingFeedhold = false;
   Motion.feedholdActive = false;
   CurrentMove.target = CurrentPosition;
+  CurrentMove.waiting_for_sync = false;
   interrupts();
 }
 XYZ_Long MotionPlanner::get_last_moves_target_steps()
@@ -257,7 +241,23 @@ bool MotionPlanner::push_sync(void (*callback)())
     memset(&move, 0, sizeof(struct Move_Data)); //Zero out the Move_Data, this may be too time consuming? May not be neccisary
     move.move_type = SYNC_MOVE;
     move.sync_callback = callback;
-    MoveStack->add(MoveStack, &move); //Push the move to the stack!
+    move.waiting_for_sync = false; //This eeds to be toggled true once the callback get called and toggled false once sync_finish is called
+    /* Its important that we push a target the same as the last move or it will break the get_last_target_position chain */
+    move.target = get_last_moves_target_steps();
+
+    if (MoveStack->isEmpty(MoveStack)) //If the first move is a sync move, don't bother pushing it to the stack, just call it here
+    {
+      if (move.sync_callback != NULL)
+      {
+        move.sync_callback();
+        CurrentMove.waiting_for_sync = true;
+      }
+      move.sync_callback = NULL;
+    }
+    else
+    {
+      MoveStack->add(MoveStack, &move); //Push the move to the stack!
+    }
     return true;
   }
 }
@@ -425,14 +425,17 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion_junk()
 }
 void MotionPlanner::tick()
 {
+  if (CurrentMove.waiting_for_sync == true) return; //No need to do anything else here until sync move is finished
   if (CurrentMove.move_type == SYNC_MOVE)
   {
     if (CurrentMove.sync_callback != NULL)
     {
       printf(Serial, "(tick()) Calling sync callback!\n");
       CurrentMove.sync_callback();
+      CurrentMove.waiting_for_sync = true;
     }
     CurrentMove.sync_callback = NULL;
+    return;
   }
   if (Motion.run == true)
   {
@@ -542,6 +545,7 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion()
 void MotionPlanner::motion_tick()
 {
   noInterrupts();
+  if (CurrentMove.waiting_for_sync == true) return; //We can't have any syncronized motion while a sync move is happening!
   if (Motion.run == true)
   {
     if (micros() > _Feedrate_Timestamp + _Feedrate_delay)

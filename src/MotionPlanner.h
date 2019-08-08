@@ -65,6 +65,7 @@ struct Move_Data {
 
    uint8_t move_type;
    void (*sync_callback)();
+   bool waiting_for_sync;
 };
 extern RingBuf *MoveStack;
 
