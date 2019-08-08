@@ -77,6 +77,11 @@ class MotionPlanner
     void init();
 
     /*
+      Stop the motion interupt
+    */
+    void stop();
+
+    /*
       Feed hold the current motion
     */
     void feedhold();

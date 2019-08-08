@@ -37,6 +37,7 @@ void fire_torch();
 void light_torch_and_pierce_delay();
 void torch_off_and_retract();
 
+void resume_motion();
 
 /* Condition check callbacks */
 bool stop_on_probe_input();

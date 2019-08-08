@@ -9,6 +9,7 @@
 
 bool PendingOkay;
 bool WaitForMotionSync;
+int MoveToSyncOn;
 void (*MotionSyncCallback)();
 
 SerialCommand sCmd;
@@ -111,6 +112,7 @@ void dump_moves()
 }
 void init()
 {
+  MoveToSyncOn = 0;
   motion.init();
   printf(Serial, "ok\n");
 }
@@ -308,10 +310,11 @@ void gcodes_tick()
   {
     //printf(Serial, "Waiting for motion to sync!\n");
     //Stop sending lines until the MoveStack is empty and the machine is not in motion anymore
-    if (motion.is_in_motion() == false && MoveStack->isEmpty(MoveStack))
+    if (MoveStack->numElements(MoveStack) == MoveToSyncOn)
     {
+      motion.stop();
       WaitForMotionSync = false; //The machine is at the last position sent!
-      //printf(Serial, "Motion is synced!\n");
+      MoveToSyncOn = 0;
       if (MotionSyncCallback != NULL)  MotionSyncCallback();
     }
   }
@@ -322,6 +325,7 @@ void SyncMotion(void (*callback)())
   MotionSyncCallback = callback;
   WaitForMotionSync = true;
   PendingOkay = false; //The last callback that fires should send the okay!
+  MoveToSyncOn = MoveStack->numElements(MoveStack); //When we get to this move, stop MotionPlanner and call MotionSyncCallback
 }
 void OkayToSend()
 {

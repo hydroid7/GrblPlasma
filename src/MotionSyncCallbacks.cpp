@@ -51,7 +51,7 @@ void retract_torch()
 */
 void retract_torch_and_finish()
 {
-  torch.move_z_incremental(Z_FLOATING_HEAD_TAKEUP + callback.pierceHeight, Z_RAPID_FEEDRATE, NULL, OkayToSend);
+  torch.move_z_incremental(Z_FLOATING_HEAD_TAKEUP + callback.pierceHeight, Z_RAPID_FEEDRATE, NULL, resume_motion);
 }
 
 /*
@@ -61,7 +61,7 @@ void torch_off_and_retract()
 {
   printf(Serial, "(torch_off_and_retract)\n");
   torch.extinguish_torch();
-  torch.move_z_incremental(callback.clearanceHeight, Z_RAPID_FEEDRATE, NULL, OkayToSend);
+  torch.move_z_incremental(callback.clearanceHeight, Z_RAPID_FEEDRATE, NULL, resume_motion);
 }
 
 /*
@@ -75,14 +75,18 @@ void light_torch_and_pierce_delay()
   if (digitalRead(ARC_OK_PIN) == LOW)
   {
     printf(Serial, "\t-> Has arc okay signal\n");
-    torch.move_z_incremental(callback.pierceHeight - callback.pierceHeight, Z_RAPID_FEEDRATE, NULL, OkayToSend);
+    torch.move_z_incremental(callback.pierceHeight - callback.pierceHeight, Z_RAPID_FEEDRATE, NULL, resume_motion);
   }
   else
   {
     //This should have a retry routine and notify ncPilot there was a problem
     printf(Serial, "\t-> Does not have arc okay signal\n");
-    OkayToSend();
+    resume_motion();
     /* Retract to z clearance and try the pierce */
   }
   
+}
+void resume_motion()
+{
+  motion.run();
 }

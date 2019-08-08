@@ -124,6 +124,10 @@ void MotionPlanner::init()
   }
 
 }
+void MotionPlanner::stop()
+{
+  Motion.run = false;
+}
 void MotionPlanner::feedhold()
 {
   if (Motion.run == true) //Only add a pending feedhold if we are in motion
