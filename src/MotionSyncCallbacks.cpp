@@ -35,7 +35,7 @@ void probe_torch()
 */
 void probe_torch_and_finish()
 {
-  torch.move_z_incremental(-10, Z_PROBE_FEEDRATE, stop_on_probe_input, OkayToSend);
+  torch.move_z_incremental(-10, Z_PROBE_FEEDRATE, stop_on_probe_input, retract_torch_and_finish);
 }
 
 /*
@@ -45,6 +45,13 @@ void retract_torch()
 {
   printf(Serial, "(retract_torch)\n");
   torch.move_z_incremental(Z_FLOATING_HEAD_TAKEUP + callback.pierceHeight, Z_RAPID_FEEDRATE, NULL, light_torch_and_pierce_delay);
+}
+/*
+  Retract to peirce height (Add the amount of floating head slop) and finish
+*/
+void retract_torch_and_finish()
+{
+  torch.move_z_incremental(Z_FLOATING_HEAD_TAKEUP + callback.pierceHeight, Z_RAPID_FEEDRATE, NULL, OkayToSend);
 }
 
 /*

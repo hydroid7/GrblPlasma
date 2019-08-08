@@ -30,6 +30,7 @@ extern CallbackData callback;
 
 /* Condition met callbacks */
 void probe_torch_and_finish();
+void retract_torch_and_finish();
 void probe_torch();
 void retract_torch();
 void fire_torch();
