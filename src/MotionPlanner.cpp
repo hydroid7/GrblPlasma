@@ -37,8 +37,8 @@ bool MotionPlanner::is_in_motion()
 }
 void MotionPlanner::dump_current_move_to_serial()
 {
-  printf(Serial, "CurrentPosition.x = %ld\n", CurrentPosition.x);
-  printf(Serial, "CurrentPosition.y = %ld\n", CurrentPosition.y);
+  printf(Serial, "CurrentPosition.x = %ld, X Scale = %.4f\n", CurrentPosition.x, _Step_Scale.x);
+  printf(Serial, "CurrentPosition.y = %ld, Y Scale = %.4f\n", CurrentPosition.y, _Step_Scale.y);
   printf(Serial, "TargetPosition.x = %ld\n", TargetPosition.x);
   printf(Serial, "TargetPosition.y = %ld\n", TargetPosition.y);
   if (Motion.run == true)
@@ -53,6 +53,8 @@ void MotionPlanner::dump_current_move_to_serial()
   printf(Serial, "Motion.dy = %ld\n", Motion.dy);
   printf(Serial, "Motion.sx = %ld\n", Motion.sx);
   printf(Serial, "Motion.sy = %ld\n", Motion.sy);
+  printf(Serial, "Motion.x_stg = %ld\n", Motion.x_stg);
+  printf(Serial, "Motion.y_stg = %ld\n", Motion.y_stg);
   if (Motion.pendingFeedhold == true)
   {
     printf(Serial, "Motion.pendingFeedhold = true\n");
@@ -138,32 +140,29 @@ void MotionPlanner::run()
 void MotionPlanner::soft_abort()
 {
   Motion.pendingSoftAbort = true;
-  feedhold();
+  feedhold(); //This will plan a deceleration then call "abort()" once machine is at MIN_FEED_RATE
 }
 void MotionPlanner::abort()
 {
   printf(Serial, "(MotionPlanner::abort()) Aborting all moves\n");
   noInterrupts();
-  /*if (Motion.run == true) //Only add a pending feedhold if we are in motion
-  {
-    Motion.pendingFeedhold = true;
-  }*/
   struct Move_Data move;
-  while (MoveStack->pull(MoveStack, &move)); //This just clears the stack from the tail to the head
-  //Motion.dx = 0, Motion.sx = 0;
-  //Motion.dy = 0, Motion.sy = 0;
-  //Motion.err = 0;
-  //Motion.x_stg = 0;
-  //Motion.y_stg = 0;
-  Motion.run = false;
+  while (MoveStack->pull(MoveStack, &move)); //This just clears the stack from the head to the tail
+  Motion.dx = 0, Motion.sx = 0;
+  Motion.dy = 0, Motion.sy = 0;
+  Motion.err = 0;
+  Motion.x_stg = 0;
+  Motion.y_stg = 0;
+  Motion.run = true; //This needs to stay true so the tick can run and do it's job still
   Motion.pendingFeedhold = false;
   Motion.feedholdActive = false;
+  CurrentMove.target = CurrentPosition;
   interrupts();
 }
 XYZ_Long MotionPlanner::get_last_moves_target_steps()
 {
   XYZ_Long pos;
-  if (MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1) != NULL) //There moves on the stack
+  if (MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1) != NULL) //There are moves on the stack
   {
       struct Move_Data *move = (Move_Data*)MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1);
       pos.x = move->target.x;
@@ -179,14 +178,14 @@ XYZ_Long MotionPlanner::get_last_moves_target_steps()
 XYZ_Double MotionPlanner::get_last_moves_target()
 {
   XYZ_Double pos;
-  if (MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1) != NULL) //There moves on the stack
+  if (MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1) != NULL) //There are moves on the stack
   {
       struct Move_Data *move = (Move_Data*)MoveStack->peek(MoveStack, MoveStack->numElements(MoveStack)-1);
       pos.x = (double)move->target.x / (double)_Step_Scale.x;
       pos.y = (double)move->target.y / (double)_Step_Scale.y;
       pos.f = ((double)move->target.f / FEED_VALUE_SCALE) * 60;
   }
-  else //There are no moves on the stack
+  else //There are no moves on the stack, last moves target is CurrentMove.target
   {
     pos.x = (double)CurrentMove.target.x / (double)_Step_Scale.x;
     pos.y = (double)CurrentMove.target.y / (double)_Step_Scale.y;
@@ -226,7 +225,6 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
     move.target.z = 0; //Right now we only need XY for plasma cutting, we'll add in more axis later
     move.target.f = (target.f * 0.0166666) * FEED_VALUE_SCALE;
     move.move_type = move_type;
-    //If we are the first move on the stack, make sure we calculate the ramp_map before we start motion otherwise motion could outrun the calculated values on small moves
     XYZ_Double current_position = get_last_moves_target();
     double dominant_accel = _Feed_Accel.x; //Assume X is dominant
     double dominant_dist = abs(target.x - current_position.x);
@@ -243,25 +241,12 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
     //printf(Serial, "Peak Feedrate is (unit/min): %.4f, Accel Marker is: %.4f, Deccel Marker is: %.4f\n", peak_feedrate * 60, move.accel_marker, move.deccel_marker);
     move.entry_velocity = MIN_FEED_RATE;
     move.exit_velocity = MIN_FEED_RATE;
-    if (MoveStack->numElements(MoveStack) > 0) //We have pending moves on the stack, need to get "current_position" from the last stack moves endpoint to calculate this target from
-    {
-      XYZ_Long cur_pos = get_last_moves_target_steps();
-      move.Motion = motion_calculate_target(cur_pos, move.target);
-    }
-    else //There are no moves on the stack, use our actual "target_position"
-    {
-      //printf(Serial, "No moves on stack, calculating target from current position: X%ld Y%ld\n", CurrentPosition.x, CurrentPosition.y);
-      move.Motion = motion_calculate_target(CurrentPosition, move.target);
-    }
-    //move.Motion = motion_calculate_target(get_last_moves_target_steps(), move.target);
+    move.Motion = motion_calculate_target(get_last_moves_target_steps(), move.target);
     MoveStack->add(MoveStack, &move); //Push the move to the stack!
-    if (Motion.run == false) //If we are not currently in motion, set our feedrate to min feed
+    if (Motion.run == false) //If we are not currently in motion, set our feedrate to min feed and start motion
     {
-      motion_set_feedrate(move.entry_velocity); //Minimum feed of 1 inch/min
-    }
-    if (Motion.feedholdActive == false)
-    {
-      Motion.run = true; //Start motion after the ramp map has been calculated
+      motion_set_feedrate(move.entry_velocity);
+      Motion.run = true;
     }
     return true;
   }
@@ -513,9 +498,8 @@ void MotionPlanner::motion_tick()
       }
       else
       {
-        if (MoveStack->numElements(MoveStack) > 0) //There are pending moves on the stack!
+        if (MoveStack->pull(MoveStack, &CurrentMove)) //There are pending moves on the stack!
         {
-          MoveStack->pull(MoveStack, &CurrentMove);
           TargetPosition.x = CurrentMove.target.x;
           TargetPosition.y = CurrentMove.target.y;
           Motion.dx = CurrentMove.Motion.dx;
