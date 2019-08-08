@@ -245,7 +245,7 @@ bool MotionPlanner::push_sync(void (*callback)())
     /* Its important that we push a target the same as the last move or it will break the get_last_target_position chain */
     move.target = get_last_moves_target_steps();
 
-    if (MoveStack->isEmpty(MoveStack)) //If the first move is a sync move, don't bother pushing it to the stack, just call it here
+    if (MoveStack->isEmpty(MoveStack) && Motion.run == false) //If the first move is a sync move, don't bother pushing it to the stack, just call it here
     {
       if (move.sync_callback != NULL)
       {
