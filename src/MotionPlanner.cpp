@@ -257,6 +257,7 @@ bool MotionPlanner::push_sync(void (*callback)())
     memset(&move, 0, sizeof(struct Move_Data)); //Zero out the Move_Data, this may be too time consuming? May not be neccisary
     move.move_type = SYNC_MOVE;
     move.sync_callback = callback;
+    MoveStack->add(MoveStack, &move); //Push the move to the stack!
     return true;
   }
 }
@@ -426,7 +427,11 @@ void MotionPlanner::tick()
 {
   if (CurrentMove.move_type == SYNC_MOVE)
   {
-    if (CurrentMove.sync_callback != NULL) CurrentMove.sync_callback();
+    if (CurrentMove.sync_callback != NULL)
+    {
+      printf(Serial, "(tick()) Calling sync callback!\n");
+      CurrentMove.sync_callback();
+    }
     CurrentMove.sync_callback = NULL;
   }
   if (Motion.run == true)
@@ -559,6 +564,7 @@ void MotionPlanner::motion_tick()
           if (CurrentMove.move_type == SYNC_MOVE)
           {
             /* Since we are a sync move, we need to stop motion and wait for our sync callback to be called. sync_finish() will resume motion */
+            printf(Serial, "(motion_tick) - pulled sync move!\n");
             Motion.run = false;
           }
           else

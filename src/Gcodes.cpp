@@ -34,11 +34,13 @@ void fire_torch()
   if (cutHeight != NULL) callback.cutHeight = atof(cutHeight);
 
   motion.push_sync(&probe_torch);
+  OkayToSend();
 }
 void torch_off()
 {
   callback.clearanceHeight = 2;
   motion.push_sync(&torch_off_and_retract);
+  OkayToSend();
 }
 void set_voltage()
 {
@@ -135,6 +137,7 @@ void probe_z()
   callback.pierceDelay = 1.5;
   callback.cutHeight = 0.250;
   motion.push_sync(&probe_torch_and_finish);
+  OkayToSend();
 }
 /* Begin Gcode functions after here */
 void rapid_move()
