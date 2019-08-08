@@ -144,7 +144,7 @@ void MotionPlanner::soft_abort()
 }
 void MotionPlanner::abort()
 {
-  printf(Serial, "(MotionPlanner::abort()) Aborting all moves\n");
+  //printf(Serial, "(MotionPlanner::abort()) Aborting all moves\n");
   noInterrupts();
   struct Move_Data move;
   while (MoveStack->pull(MoveStack, &move)); //This just clears the stack from the head to the tail
@@ -514,6 +514,7 @@ void MotionPlanner::motion_tick()
         {
           CurrentVelocity.x = 0;
           CurrentVelocity.y = 0;
+          abort();
           Motion.run = false;
         }
       }
