@@ -31,6 +31,14 @@ void probe_torch()
 }
 
 /*
+  Move torch towards workpiece until the probe input is met and finsish
+*/
+void probe_torch_and_finish()
+{
+  torch.move_z_incremental(-10, Z_PROBE_FEEDRATE, stop_on_probe_input, OkayToSend);
+}
+
+/*
   Retract to peirce height (Add the amount of floating head slop)
 */
 void retract_torch()

@@ -131,6 +131,13 @@ void movez()
     printf(Serial, "Command usage: movez <distance> <feedrate>\n");
   }
 }
+void probe_z()
+{
+  callback.pierceHeight = 0.250;
+  callback.pierceDelay = 1.5;
+  callback.cutHeight = 0.250;
+  SyncMotion(&probe_torch_and_finish);
+}
 /* Begin Gcode functions after here */
 void rapid_move()
 {
@@ -272,6 +279,7 @@ void gcodes_init()
   sCmd.addCommand("abort", abort);
   sCmd.addCommand("soft_abort", soft_abort);
   sCmd.addCommand("movez", movez);
+  sCmd.addCommand("probe_z", probe_z);
   
 
   //All Gcode commands below here
