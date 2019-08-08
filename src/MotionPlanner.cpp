@@ -141,6 +141,37 @@ void MotionPlanner::run()
   Motion.run = true;
   Motion.feedholdActive = false;
 }
+void MotionPlanner::sync_finished()
+{
+  if (MoveStack->pull(MoveStack, &CurrentMove)) //There are pending moves on the stack!
+  {
+    if (CurrentMove.move_type == SYNC_MOVE)
+    {
+      /* Since we are a sync move, we need to stop motion and wait for our sync callback to be called from tick(). sync_finish() will resume motion */
+      Motion.run = false;
+    }
+    else
+    {
+      TargetPosition.x = CurrentMove.target.x;
+      TargetPosition.y = CurrentMove.target.y;
+      Motion.dx = CurrentMove.Motion.dx;
+      Motion.dy = CurrentMove.Motion.dy;
+      Motion.sx = CurrentMove.Motion.sx;
+      Motion.sy = CurrentMove.Motion.sy;
+      Motion.err = CurrentMove.Motion.err;
+      Motion.x_stg = CurrentMove.Motion.x_stg;
+      Motion.y_stg = CurrentMove.Motion.y_stg;
+      Motion.run = true;
+    }        
+  }
+  else
+  {
+    CurrentVelocity.x = 0;
+    CurrentVelocity.y = 0;
+    abort();
+    Motion.run = false;
+  }
+}
 void MotionPlanner::soft_abort()
 {
   Motion.pendingSoftAbort = true;
@@ -212,6 +243,22 @@ XYZ_Double MotionPlanner::get_current_velocity()
   vel.y = (double)CurrentVelocity.y;
   vel.f = sqrt(pow((vel.x), 2) + pow(vel.y, 2)) * 60;
   return vel;
+}
+bool MotionPlanner::push_sync(void (*callback)())
+{
+  if (MoveStack->isFull(MoveStack))
+  {
+    //We need to setup a system that will wait for the stack to have space available agian and send an OK
+    return false;
+  }
+  else
+  {
+    struct Move_Data move;
+    memset(&move, 0, sizeof(struct Move_Data)); //Zero out the Move_Data, this may be too time consuming? May not be neccisary
+    move.move_type = SYNC_MOVE;
+    move.sync_callback = callback;
+    return true;
+  }
 }
 bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
 {
@@ -377,6 +424,11 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion_junk()
 }
 void MotionPlanner::tick()
 {
+  if (CurrentMove.move_type == SYNC_MOVE)
+  {
+    if (CurrentMove.sync_callback != NULL) CurrentMove.sync_callback();
+    CurrentMove.sync_callback = NULL;
+  }
   if (Motion.run == true)
   {
     if (millis() > _Feed_Sample_Timestamp + FEED_RAMP_UPDATE_INTERVAL)
@@ -504,15 +556,23 @@ void MotionPlanner::motion_tick()
       {
         if (MoveStack->pull(MoveStack, &CurrentMove)) //There are pending moves on the stack!
         {
-          TargetPosition.x = CurrentMove.target.x;
-          TargetPosition.y = CurrentMove.target.y;
-          Motion.dx = CurrentMove.Motion.dx;
-          Motion.dy = CurrentMove.Motion.dy;
-          Motion.sx = CurrentMove.Motion.sx;
-          Motion.sy = CurrentMove.Motion.sy;
-          Motion.err = CurrentMove.Motion.err;
-          Motion.x_stg = CurrentMove.Motion.x_stg;
-          Motion.y_stg = CurrentMove.Motion.y_stg;
+          if (CurrentMove.move_type == SYNC_MOVE)
+          {
+            /* Since we are a sync move, we need to stop motion and wait for our sync callback to be called. sync_finish() will resume motion */
+            Motion.run = false;
+          }
+          else
+          {
+            TargetPosition.x = CurrentMove.target.x;
+            TargetPosition.y = CurrentMove.target.y;
+            Motion.dx = CurrentMove.Motion.dx;
+            Motion.dy = CurrentMove.Motion.dy;
+            Motion.sx = CurrentMove.Motion.sx;
+            Motion.sy = CurrentMove.Motion.sy;
+            Motion.err = CurrentMove.Motion.err;
+            Motion.x_stg = CurrentMove.Motion.x_stg;
+            Motion.y_stg = CurrentMove.Motion.y_stg;
+          }
         }
         else
         {

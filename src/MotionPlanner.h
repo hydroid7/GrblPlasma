@@ -13,6 +13,7 @@
 
 #define RAPID_MOVE 0
 #define LINE_MOVE 1
+#define SYNC_MOVE 2
 
 struct XYZ_Long {
    long x;
@@ -63,6 +64,7 @@ struct Move_Data {
    double exit_velocity; //units/sec
 
    uint8_t move_type;
+   void (*sync_callback)();
 };
 extern RingBuf *MoveStack;
 
@@ -108,6 +110,19 @@ class MotionPlanner
       target - XYZ_Double set to a position in scaled units and f is feedrate in units/min
     */
     bool push_target(XYZ_Double target, uint8_t move_type);
+
+    /*
+      Pushes a new sync move to the stack
+
+      callback - This is the call that needs to be ran once the head of the stack gets to this item. Needs to be non-blocking so main loop still cycles.
+      Motion will resume once motion.sync_finished is called!
+    */
+    bool push_sync(void (*callback)());
+
+    /*
+      Notifies that it's time to move onto next move
+    */
+   void sync_finished();
 
     /*
       Returns a XYZ_Double with current machine coordinant positions

@@ -8,9 +8,6 @@
 #include "Gcodes.h"
 
 bool PendingOkay;
-bool WaitForMotionSync;
-int MoveToSyncOn;
-void (*MotionSyncCallback)();
 
 SerialCommand sCmd;
 MotionPlanner motion;
@@ -36,12 +33,12 @@ void fire_torch()
   if (pierceDelay != NULL) callback.pierceDelay = atof(pierceDelay);
   if (cutHeight != NULL) callback.cutHeight = atof(cutHeight);
 
-  SyncMotion(&probe_torch);
+  motion.push_sync(&probe_torch);
 }
 void torch_off()
 {
   callback.clearanceHeight = 2;
-  SyncMotion(&torch_off_and_retract);
+  motion.push_sync(&torch_off_and_retract);
 }
 void set_voltage()
 {
@@ -112,7 +109,6 @@ void dump_moves()
 }
 void init()
 {
-  MoveToSyncOn = 0;
   motion.init();
   printf(Serial, "ok\n");
 }
@@ -138,7 +134,7 @@ void probe_z()
   callback.pierceHeight = 0.250;
   callback.pierceDelay = 1.5;
   callback.cutHeight = 0.250;
-  SyncMotion(&probe_torch_and_finish);
+  motion.push_sync(&probe_torch_and_finish);
 }
 /* Begin Gcode functions after here */
 void rapid_move()
@@ -294,38 +290,15 @@ void gcodes_init()
   sCmd.setDefaultHandler(unrecognized);
 
   PendingOkay = false;
-  WaitForMotionSync = false;
 }
 void gcodes_tick()
 {
   if (PendingOkay == true && MoveStack->isFull(MoveStack) == false)
   {
-    if (WaitForMotionSync == false) //We are not waiting for motion to sync, keep sending lines
-    {
-      PendingOkay = false;
-      printf(Serial, "ok: %d\n", MoveStack->numElements(MoveStack)); //Send an okay once there is room in the stack!
-    }
-  }
-  if (WaitForMotionSync == true)
-  {
-    //printf(Serial, "Waiting for motion to sync!\n");
-    //Stop sending lines until the MoveStack is empty and the machine is not in motion anymore
-    if (MoveStack->numElements(MoveStack) == MoveToSyncOn)
-    {
-      motion.stop();
-      WaitForMotionSync = false; //The machine is at the last position sent!
-      MoveToSyncOn = 0;
-      if (MotionSyncCallback != NULL)  MotionSyncCallback();
-    }
+    PendingOkay = false;
+    printf(Serial, "ok: %d\n", MoveStack->numElements(MoveStack)); //Send an okay once there is room in the stack!
   }
   sCmd.readSerial();
-}
-void SyncMotion(void (*callback)())
-{
-  MotionSyncCallback = callback;
-  WaitForMotionSync = true;
-  PendingOkay = false; //The last callback that fires should send the okay!
-  MoveToSyncOn = MoveStack->numElements(MoveStack); //When we get to this move, stop MotionPlanner and call MotionSyncCallback
 }
 void OkayToSend()
 {

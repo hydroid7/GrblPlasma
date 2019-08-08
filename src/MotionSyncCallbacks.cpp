@@ -88,5 +88,5 @@ void light_torch_and_pierce_delay()
 }
 void resume_motion()
 {
-  motion.run();
+  motion.sync_finished();
 }
