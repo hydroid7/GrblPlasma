@@ -37,12 +37,16 @@ TorchControl::TorchControl()
 }
 void TorchControl::init()
 {
+  pinMode(Z_ENABLE_PIN, OUTPUT);
   pinMode(Z_STEP_PIN, OUTPUT); //Z Step
   pinMode(Z_DIR_PIN, OUTPUT); //Z Dir
   pinMode(ARC_START_PIN, OUTPUT); //Arc Start
   pinMode(Z_PROBE_PIN, INPUT); //Z Probe
   pinMode(ARC_VOLTAGE_PIN, INPUT);
 
+  digitalWrite(Z_ENABLE_PIN, HIGH);
+
+  
   if (move_timer.begin(move_timer_tick, 10))
   {
     printf(Serial, "move_timer Timer init: OK!\n");

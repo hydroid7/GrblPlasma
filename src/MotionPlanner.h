@@ -157,6 +157,16 @@ class MotionPlanner
     bool is_in_motion();
 
     /*
+      Invert axis step direction
+    */
+    void invert_axis_dir(int axis, int value);
+
+    /*
+      Set axis scale
+    */
+    void set_axis_scale(int axis, double value);
+
+    /*
       This is called by an interupt timer. Handles all syncronized motion. Not meant to be user callable but needs to be public so ISR can reference it
     */
     void motion_tick();
@@ -172,6 +182,10 @@ class MotionPlanner
     volatile unsigned long _Feed_Sample_Timestamp;
     volatile unsigned long _Feedrate_Timestamp;
     volatile unsigned long _Feedrate_delay;
+
+    volatile bool _Invert_X_Dir;
+    volatile bool _Invert_Y1_Dir;
+    volatile bool _Invert_Y2_Dir;
 
     //Contants that need to be set by constructor initially and they need to have public setters
     XYZ_Double _Step_Scale;

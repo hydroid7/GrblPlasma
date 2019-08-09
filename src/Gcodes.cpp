@@ -81,6 +81,40 @@ void run()
   printf(Serial, "Run!\n");
   motion.run();
 }
+void invert_dir()
+{
+  char *axis = sCmd.next();
+  char *set = sCmd.next();
+
+  if (axis != NULL && set != NULL)
+  {
+    int axis_number = atoi(axis);
+    int value = atoi(set);
+    printf(Serial, "Setting axis %d invert to %d\n", axis_number, value);
+    motion.invert_axis_dir(axis_number, value);
+  }
+  else
+  {
+    printf(Serial, "Command usage: invert_dir <axis> <set>\n");
+  }
+}
+void set_scale()
+{
+  char *axis = sCmd.next();
+  char *set = sCmd.next();
+
+  if (axis != NULL && set != NULL)
+  {
+    int axis_number = atoi(axis);
+    double value = atof(set);
+    printf(Serial, "Setting axis %d scale to %.4f\n", axis_number, value);
+    motion.set_axis_scale(axis_number, value);
+  }
+  else
+  {
+    printf(Serial, "Command usage: set_scale <axis> <scale>\n");
+  }
+}
 void position_report()
 {
   XYZ_Double position = motion.get_current_position();
@@ -281,6 +315,8 @@ void gcodes_init()
   sCmd.addCommand("soft_abort", soft_abort);
   sCmd.addCommand("movez", movez);
   sCmd.addCommand("probe_z", probe_z);
+  sCmd.addCommand("invert_dir", invert_dir);
+  sCmd.addCommand("set_scale", set_scale);
   
 
   //All Gcode commands below here

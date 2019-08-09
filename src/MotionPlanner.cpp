@@ -79,6 +79,10 @@ void MotionPlanner::dump_current_move_to_serial()
 }
 void MotionPlanner::init()
 {
+  _Invert_X_Dir = false;
+  _Invert_Y1_Dir = false;
+  _Invert_Y2_Dir = false;
+  
   CurrentMove.target.x = 0;
   CurrentMove.target.y = 0;
   CurrentMove.target.z = 0;
@@ -107,12 +111,21 @@ void MotionPlanner::init()
 
   percentage_into_move = 0;
 
+  pinMode(X_ENABLE_PIN, OUTPUT);
   pinMode(X_DIR_PIN, OUTPUT);
   pinMode(X_STEP_PIN, OUTPUT);
+
+  pinMode(Y1_ENABLE_PIN, OUTPUT);
   pinMode(Y1_DIR_PIN, OUTPUT);
   pinMode(Y1_STEP_PIN, OUTPUT);
+
+  pinMode(Y2_ENABLE_PIN, OUTPUT);
   pinMode(Y2_DIR_PIN, OUTPUT);
   pinMode(Y2_STEP_PIN, OUTPUT);
+
+  digitalWrite(X_ENABLE_PIN, HIGH);
+  digitalWrite(Y1_ENABLE_PIN, HIGH);
+  digitalWrite(Y2_ENABLE_PIN, HIGH);
 
   if (motion_timer.begin(motion_timer_tick, 1))
   {
@@ -301,6 +314,26 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
       Motion.run = true;
     }
     return true;
+  }
+}
+void MotionPlanner::invert_axis_dir(int axis, int value)
+{
+  switch(axis) {
+    case 0:
+       _Invert_X_Dir = value;
+    case 1:
+       _Invert_Y1_Dir = value;
+    case 2:
+       _Invert_Y2_Dir = value;
+  }
+}
+void MotionPlanner::set_axis_scale(int axis, double value)
+{
+  switch(axis) {
+    case 0:
+       _Step_Scale.x = value;
+    case 1:
+       _Step_Scale.y = value;
   }
 }
 void MotionPlanner::motion_set_feedrate(double feed)
@@ -624,11 +657,11 @@ void MotionPlanner::motion_step_x(int dir)
 {
   if (dir > 0)
   {
-    digitalWrite(X_DIR_PIN, HIGH);
+    digitalWrite(X_DIR_PIN, _Invert_X_Dir);
   }
   else
   {
-    digitalWrite(X_DIR_PIN, LOW);
+    digitalWrite(X_DIR_PIN, !_Invert_X_Dir);
   }
   delayMicroseconds(20); //Delay for direction change
   digitalWrite(X_STEP_PIN, LOW);
@@ -639,13 +672,13 @@ void MotionPlanner::motion_step_y(int dir)
 {
   if (dir > 0)
   {
-    digitalWrite(Y1_DIR_PIN, LOW);
-    digitalWrite(Y2_DIR_PIN, LOW);
+    digitalWrite(Y1_DIR_PIN, _Invert_Y1_Dir);
+    digitalWrite(Y2_DIR_PIN, _Invert_Y2_Dir);
   }
   else
   {
-    digitalWrite(Y1_DIR_PIN, HIGH);
-    digitalWrite(Y2_DIR_PIN, HIGH);
+    digitalWrite(Y1_DIR_PIN, !_Invert_Y1_Dir);
+    digitalWrite(Y2_DIR_PIN, !_Invert_Y2_Dir);
   }
   delayMicroseconds(20); //Delay for direction change
   digitalWrite(Y1_STEP_PIN, LOW);
