@@ -117,6 +117,24 @@ void set_scale()
     printf(Serial, "Command usage: set_scale <axis> <scale>\n");
   }
 }
+void set_torch()
+{
+  char *rapid = sCmd.next();
+  char *probe = sCmd.next();
+  char *takeup = sCmd.next();
+
+  if (rapid != NULL && probe != NULL && takeup != NULL)
+  {
+    syncConfig.z_rapid_feed = atof(rapid) / 60;
+    syncConfig.z_probe_feed  = atof(probe) / 60;
+    syncConfig.floating_head_takeup = atof(takeup);
+    printf(Serial, "Setting torch parameters\n\tRapid Feed: %.4f\n\tProbe Feed: %.4f\n\tFloating head takeup: %.4f\n", syncConfig.z_rapid_feed, syncConfig.z_probe_feed, syncConfig.floating_head_takeup);
+  }
+  else
+  {
+    printf(Serial, "Command usage: set_torch <rapid IPM> <probe IPM> <floating head takeup in units>\n");
+  }
+}
 void position_report()
 {
   XYZ_Double position = motion.get_current_position();
@@ -319,6 +337,7 @@ void gcodes_init()
   sCmd.addCommand("probe_z", probe_z);
   sCmd.addCommand("invert_dir", invert_dir);
   sCmd.addCommand("set_scale", set_scale);
+  sCmd.addCommand("set_torch", set_torch);
   
 
   //All Gcode commands below here

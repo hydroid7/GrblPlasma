@@ -17,6 +17,12 @@ extern "C" {
 /**********************
  *      GLOBALS
  **********************/
+
+struct MotionSyncConfig{
+  double z_rapid_feed;
+  double z_probe_feed;
+  double floating_head_takeup;
+};
 struct CallbackData {
   double pierceHeight;
   double pierceDelay;
@@ -24,6 +30,7 @@ struct CallbackData {
   double clearanceHeight;
 };
 extern CallbackData callback;
+extern MotionSyncConfig syncConfig;
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
@@ -41,6 +48,8 @@ void resume_motion();
 
 /* Condition check callbacks */
 bool stop_on_probe_input();
+
+void MotionSync_init();
 
 /**********************
  * CONTROLS PROTOTYPES

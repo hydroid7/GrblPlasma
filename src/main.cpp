@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "Machine.h"
 #include "MotionPlanner.h"
+#include "MotionSyncCallbacks.h"
 #include "TorchControl.h"
 #include "RingBuf.h"
 #include "Gcodes.h"
@@ -48,6 +49,7 @@ void setup()
   gcodes_init();
   motion.init();
   torch.init();
+  MotionSync_init();
 
   //Setup timer tasks
   cpu_blink_timer.every(1000, cpu_blink);
