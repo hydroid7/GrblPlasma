@@ -19,6 +19,7 @@ void move_timer_tick()
 }
 TorchControl::TorchControl()
 {
+  _Invert_Dir = false;
   _Step_Scale = 2540;
   _Feedrate_Timestamp = 0;
   _Feedrate_delay = 0;
@@ -46,7 +47,7 @@ void TorchControl::init()
 
   digitalWrite(Z_ENABLE_PIN, HIGH);
 
-  
+
   if (move_timer.begin(move_timer_tick, 10))
   {
     printf(Serial, "move_timer Timer init: OK!\n");
@@ -80,6 +81,22 @@ double TorchControl::get_set_voltage()
 void TorchControl::set_arc_voltage(double volts)
 {
   thc.set_voltage = volts;
+}
+void TorchControl::set_axis_scale(int axis, double value)
+{
+  switch(axis) {
+    case 2:
+       _Step_Scale = value;
+       break;
+  }
+}
+void TorchControl::invert_joint_dir(int axis, int value)
+{
+  switch(axis) {
+    case 3:
+      _Invert_Dir = value;
+      break;
+  }
 }
 void TorchControl::move_z_incremental(double distance, double feedrate, bool (*condition)(), void (*met)())
 {
@@ -170,6 +187,7 @@ unsigned long TorchControl::cycle_frequency_from_feedrate(double feedrate)
 }
 void TorchControl::move_tick()
 {
+  noInterrupts();
   if (run == true)
   {
     if (ConditionCallback != NULL)
@@ -200,6 +218,7 @@ void TorchControl::move_tick()
       _Feedrate_Timestamp = micros();
     }
   }
+  interrupts();
 }
 void TorchControl::step_z(int dir)
 {
@@ -208,11 +227,11 @@ void TorchControl::step_z(int dir)
   StepsToGo--;
   if (dir > 0)
   {
-    digitalWrite(Z_DIR_PIN, HIGH);
+    digitalWrite(Z_DIR_PIN, !_Invert_Dir);
   }
   else
   {
-    digitalWrite(Z_DIR_PIN, LOW);
+    digitalWrite(Z_DIR_PIN, _Invert_Dir);
   }
   delayMicroseconds(20); //Delay for direction change
   digitalWrite(Z_STEP_PIN, LOW);

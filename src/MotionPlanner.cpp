@@ -316,15 +316,18 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
     return true;
   }
 }
-void MotionPlanner::invert_axis_dir(int axis, int value)
+void MotionPlanner::invert_joint_dir(int axis, int value)
 {
   switch(axis) {
     case 0:
        _Invert_X_Dir = value;
+       break;
     case 1:
        _Invert_Y1_Dir = value;
+       break;
     case 2:
        _Invert_Y2_Dir = value;
+       break;
   }
 }
 void MotionPlanner::set_axis_scale(int axis, double value)
@@ -332,8 +335,10 @@ void MotionPlanner::set_axis_scale(int axis, double value)
   switch(axis) {
     case 0:
        _Step_Scale.x = value;
+       break;
     case 1:
        _Step_Scale.y = value;
+       break;
   }
 }
 void MotionPlanner::motion_set_feedrate(double feed)

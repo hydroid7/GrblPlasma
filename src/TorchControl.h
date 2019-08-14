@@ -70,6 +70,19 @@ class TorchControl
     void set_arc_voltage(double volts);
 
     /*
+      Sets the Z axis scale
+
+      axis - the axis number to set (values except 2 are ignored so it works the same way as the same function in the MotionPlanner Class)
+      value - the scale to set too
+    */
+    void set_axis_scale(int axis, double value);
+
+    /*
+      Invert joint step direction
+    */
+    void invert_joint_dir(int axis, int value);
+
+    /*
       Cancel Move
     */
     void cancel();
@@ -92,13 +105,14 @@ class TorchControl
     void step_z(int dir);
 
   private:
+    volatile bool _Invert_Dir;
     double _Step_Scale;
-    unsigned long _Feedrate_Timestamp;
-    unsigned long _Feedrate_delay;
-    long CurrentPosition;
-    long StepsToGo;
-    int StepDir;
-    bool run;
+    volatile unsigned long _Feedrate_Timestamp;
+    volatile unsigned long _Feedrate_delay;
+    volatile long CurrentPosition;
+    volatile long StepsToGo;
+    volatile int StepDir;
+    volatile bool run;
 
     /*
       Calculate feed_delay given feedrate in units/sec

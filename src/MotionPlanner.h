@@ -159,7 +159,7 @@ class MotionPlanner
     /*
       Invert axis step direction
     */
-    void invert_axis_dir(int axis, int value);
+    void invert_joint_dir(int axis, int value);
 
     /*
       Set axis scale
@@ -276,8 +276,6 @@ class MotionPlanner
       Code to step_y
     */
     void motion_step_y(int dir);
-
-
 
 };
 

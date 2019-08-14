@@ -91,7 +91,8 @@ void invert_dir()
     int axis_number = atoi(axis);
     int value = atoi(set);
     printf(Serial, "Setting axis %d invert to %d\n", axis_number, value);
-    motion.invert_axis_dir(axis_number, value);
+    motion.invert_joint_dir(axis_number, value);
+    torch.invert_joint_dir(axis_number, value);
   }
   else
   {
@@ -108,7 +109,8 @@ void set_scale()
     int axis_number = atoi(axis);
     double value = atof(set);
     printf(Serial, "Setting axis %d scale to %.4f\n", axis_number, value);
-    motion.set_axis_scale(axis_number, value);
+    motion.set_axis_scale(axis_number, value); //Axes that are out of range are ignored
+    torch.set_axis_scale(axis_number, value); //Axes that are out of range are ignored
   }
   else
   {
