@@ -318,15 +318,17 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
 }
 void MotionPlanner::invert_joint_dir(int axis, int value)
 {
+  bool val = false;
+  if (value > 0) val = true;
   switch(axis) {
     case 0:
-       _Invert_X_Dir = value;
+       _Invert_X_Dir = val;
        break;
     case 1:
-       _Invert_Y1_Dir = value;
+       _Invert_Y1_Dir = val;
        break;
     case 2:
-       _Invert_Y2_Dir = value;
+       _Invert_Y2_Dir = val;
        break;
   }
 }

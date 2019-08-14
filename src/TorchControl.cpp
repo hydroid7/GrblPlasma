@@ -92,9 +92,11 @@ void TorchControl::set_axis_scale(int axis, double value)
 }
 void TorchControl::invert_joint_dir(int axis, int value)
 {
+  bool val = false;
+  if (value > 0) val = true;
   switch(axis) {
     case 3:
-      _Invert_Dir = value;
+      _Invert_Dir = val;
       break;
   }
 }
