@@ -362,5 +362,8 @@ void gcodes_tick()
 }
 void OkayToSend()
 {
-  PendingOkay = true;
+  if (sCmd.CRCpassed())
+  {
+    PendingOkay = true;
+  }
 }

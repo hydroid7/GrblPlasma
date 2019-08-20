@@ -51,7 +51,7 @@ class SerialCommand {
     void readSerial();    // Main entry point.
     void clearBuffer();   // Clears the input buffer.
     char *next();         // Returns pointer to next token found in command buffer (for getting arguments to commands).
-
+    bool CRCpassed();
   private:
     // Command/handler dictionary
     struct SerialCommandCallback {
@@ -63,13 +63,20 @@ class SerialCommand {
 
     // Pointer to the default handler function
     void (*defaultHandler)(const char *);
-
     char delim[2]; // null-terminated list of character to be used as delimeters for tokenizing (default " ")
     char term;     // Character that signals end of command (default '\n')
 
     char buffer[SERIALCOMMAND_BUFFER + 1]; // Buffer of stored characters while waiting for terminator character
     byte bufPos;                        // Current position in the buffer
     char *last;                         // State variable used by strtok_r during processing
+
+    /*
+      CRC Related
+    */
+    char crc_delim[2];
+    bool crc_passed;
+    int checksum(char* buf, int len);
+
 };
 
 #endif //SerialCommand_h

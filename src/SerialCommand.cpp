@@ -22,7 +22,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SerialCommand.h"
-
+#include "Gcodes.h"
 /**
  * Constructor makes sure some things are set.
  */
@@ -34,6 +34,7 @@ SerialCommand::SerialCommand()
     last(NULL)
 {
   strcpy(delim, " "); // strtok_r needs a null-terminated string
+  strcpy(crc_delim, "*");
   clearBuffer();
 }
 
@@ -64,6 +65,20 @@ void SerialCommand::setDefaultHandler(void (*function)(const char *)) {
   defaultHandler = function;
 }
 
+int SerialCommand::checksum(char* buf, int len)
+{
+  int checksum = 0;
+  int count = len;
+  while (count > 0)
+  {
+    checksum ^= buf[--count];
+  }
+  return checksum;
+}
+bool SerialCommand::CRCpassed()
+{
+  return crc_passed;
+}
 
 /**
  * This checks the Serial stream for characters, and assembles them into a buffer.
@@ -82,36 +97,69 @@ void SerialCommand::readSerial() {
         Serial.print("Received: ");
         Serial.println(buffer);
       #endif
-
-      char *command = strtok_r(buffer, delim, &last);   // Search for command at start of buffer
-      if (command != NULL) {
-        boolean matched = false;
-        for (int i = 0; i < commandCount; i++) {
-          #ifdef SERIALCOMMAND_DEBUG
-            Serial.print("Comparing [");
-            Serial.print(command);
-            Serial.print("] to [");
-            Serial.print(commandList[i].command);
-            Serial.println("]");
-          #endif
-
-          // Compare the found command against the list of known commands for a match
-          if (strncmp(command, commandList[i].command, SERIALCOMMAND_MAXCOMMANDLENGTH) == 0) {
+      //printf(Serial, "(SerialCommand->buffer) %s\n", buffer);
+      char *crc_command = strtok_r(buffer, crc_delim, &last);
+      //printf(Serial, "(SerialCommand->crc_command) %s\n", crc_command);
+      char *crc_value = strtok_r(NULL, crc_delim, &last);
+      if (crc_value != NULL)
+      {
+        int crc_val = atoi(crc_value);
+        int length = 0;
+        while (crc_command[length] != '\0') length++;
+        int calculated = checksum(crc_command, length);
+        //printf(Serial, "Recieved Checksum: %d, Calculated Checksum: %d\n", crc_val, calculated);
+        if (crc_val == calculated)
+        {
+          crc_passed = true;
+        }
+        else
+        {
+          crc_passed = false;
+        }
+        
+      }
+      else
+      {
+        crc_passed = true;
+      }
+      
+      if (crc_passed == false)
+      {
+        printf(Serial, "crc_fail\n");
+      }
+      else
+      {
+        char *command = strtok_r(crc_command, delim, &last);   // Search for command at start of buffer
+        if (command != NULL) {
+          boolean matched = false;
+          for (int i = 0; i < commandCount; i++) {
             #ifdef SERIALCOMMAND_DEBUG
-              Serial.print("Matched Command: ");
-              Serial.println(command);
+              Serial.print("Comparing [");
+              Serial.print(command);
+              Serial.print("] to [");
+              Serial.print(commandList[i].command);
+              Serial.println("]");
             #endif
 
-            // Execute the stored handler function for the command
-            (*commandList[i].function)();
-            matched = true;
-            break;
+            // Compare the found command against the list of known commands for a match
+            if (strncmp(command, commandList[i].command, SERIALCOMMAND_MAXCOMMANDLENGTH) == 0) {
+              #ifdef SERIALCOMMAND_DEBUG
+                Serial.print("Matched Command: ");
+                Serial.println(command);
+              #endif
+
+              // Execute the stored handler function for the command
+              (*commandList[i].function)();
+              matched = true;
+              break;
+            }
+          }
+          if (!matched && (defaultHandler != NULL)) {
+            (*defaultHandler)(command);
           }
         }
-        if (!matched && (defaultHandler != NULL)) {
-          (*defaultHandler)(command);
-        }
       }
+      
       clearBuffer();
     }
     else if (isprint(inChar)) {     // Only printable characters into the buffer

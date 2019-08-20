@@ -61,7 +61,7 @@ void loop()
 {
   gcodes_tick();
   cpu_blink_timer.tick();
-  dro_timer.tick();
+  //dro_timer.tick();
   torch.tick();
   motion.tick();
 }
