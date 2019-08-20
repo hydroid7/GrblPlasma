@@ -45,6 +45,11 @@ class TorchControl
     void extinguish_torch();
 
     /*
+      Is the torch on or off?
+    */
+    bool get_torch_state();
+
+    /*
       Move the z axis incrementally, this is a non-blocking call.
 
       distance - distance to travel, sign is direction

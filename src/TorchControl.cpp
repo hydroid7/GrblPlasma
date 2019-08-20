@@ -252,3 +252,7 @@ void TorchControl::extinguish_torch()
   thc.torch_on = false;
   digitalWrite(28, LOW);
 }
+bool TorchControl::get_torch_state()
+{
+  return thc.torch_on;
+}

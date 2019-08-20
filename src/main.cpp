@@ -17,6 +17,8 @@ auto cpu_blink_timer = timer_create_default();
 bool dro_stop_report;
 auto dro_timer = timer_create_default();
 
+auto watchdog_timer = timer_create_default();
+
 bool cpu_blink(void *)
 {
   digitalWrite(LED, !digitalRead(LED)); // toggle the LED
@@ -42,6 +44,23 @@ bool dro_output(void *)
   }*/
   return true; // repeat? true
 }
+
+/*
+  This timers function is to turn the torch off in the event that something happens
+  betwen ncPilot and the controller causing a condition where the torch is on but
+  move stack runs dry and motion stops... If this happens, we need to turn the torch off!
+*/
+XYZ_Double last_pos;
+bool watchdog_check(void *)
+{
+  XYZ_Double current_pos = motion.get_current_position();
+  if (current_pos.x == last_pos.x && current_pos.y == last_pos.y && torch.get_torch_state() == true)
+  {
+    //There has been no movement in the last three seconds and the torch is on, this is error!
+    torch.extinguish_torch();
+  }
+  last_pos = current_pos;
+}
 void setup()
 {
   //Init everything
@@ -56,12 +75,15 @@ void setup()
 
   dro_stop_report = false;
   dro_timer.every(100, dro_output);
+
+  last_pos = motion.get_current_position();
+  watchdog_timer.every(6000, watchdog_check);
 }
 void loop()
 {
   gcodes_tick();
   cpu_blink_timer.tick();
-  //dro_timer.tick();
+  dro_timer.tick();
   torch.tick();
   motion.tick();
 }
