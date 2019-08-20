@@ -105,14 +105,14 @@ class TorchControl
     void step_z(int dir);
 
   private:
-    volatile bool _Invert_Dir;
+    bool _Invert_Dir;
     double _Step_Scale;
-    volatile unsigned long _Feedrate_Timestamp;
-    volatile unsigned long _Feedrate_delay;
-    volatile long CurrentPosition;
-    volatile long StepsToGo;
-    volatile int StepDir;
-    volatile bool run;
+    unsigned long _Feedrate_Timestamp;
+    unsigned long _Feedrate_delay;
+    long CurrentPosition;
+    long StepsToGo;
+    int StepDir;
+    bool run;
 
     /*
       Calculate feed_delay given feedrate in units/sec
