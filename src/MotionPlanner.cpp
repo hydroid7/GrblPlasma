@@ -84,7 +84,8 @@ void MotionPlanner::dump_current_move_to_serial()
   printf(Serial, "CurrentMove.target.y = %ld\n", CurrentMove.target.y);
   printf(Serial, "CurrentMove.target.z = %ld\n", CurrentMove.target.z);
   printf(Serial, "CurrentMove.target.f = %ld\n", CurrentMove.target.f);
-  printf(Serial, "_Feedrate_delay = %ld\n", _Feedrate_delay);
+  printf(Serial, "_Feedrate_Time_Stamp = %lu\n", _Feedrate_Timestamp);
+  printf(Serial, "_Feedrate_delay = %lu\n", _Feedrate_delay);
 }
 void MotionPlanner::init()
 {
@@ -193,7 +194,7 @@ void MotionPlanner::abort()
   Motion.err = 0;
   Motion.x_stg = 0;
   Motion.y_stg = 0;
-  Motion.run = true; //This needs to stay true so the tick can run and do it's job still
+  Motion.run = false;
   Motion.pendingFeedhold = false;
   Motion.feedholdActive = false;
   CurrentMove.target.x = CurrentPosition.x;
@@ -201,6 +202,7 @@ void MotionPlanner::abort()
   CurrentMove.target.z = CurrentPosition.z;
   CurrentMove.target.f = CurrentPosition.f;
   CurrentMove.waiting_for_sync = false;
+  _Feedrate_Timestamp = 0;
   interrupts();
 }
 XYZ_Long MotionPlanner::get_last_moves_target_steps()
@@ -648,12 +650,16 @@ void MotionPlanner::motion_tick()
           CurrentVelocity.x = 0;
           CurrentVelocity.y = 0;
           abort();
-          Motion.run = false;
         }
       }
       _Feedrate_Timestamp = micros();
     }
   }
+  else
+  {
+    _Feedrate_Timestamp = 0; //If the machine sets with run=true and no movement there's a posibility that micros overflows and resets witch will result in the timer being broken
+  }
+  
   interrupts();
 }
 double MotionPlanner::motion_get_vector_angle(XYZ_Double p1, XYZ_Double p2)
