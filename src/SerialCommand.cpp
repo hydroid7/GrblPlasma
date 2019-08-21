@@ -108,7 +108,8 @@ void SerialCommand::readSerial() {
         crc_val = atoi(crc_value);
         int length = 1;
         while (crc_command[length] != '\0') length++;
-        calculated = checksum(crc_command, length);
+        //calculated = checksum(crc_command, length);
+        calculated = length;
         //printf(Serial, "Recieved Checksum: %d, Calculated Checksum: %d\n", crc_val, calculated);
         if (crc_val == calculated)
         {
