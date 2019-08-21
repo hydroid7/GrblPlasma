@@ -21,7 +21,7 @@ bool stop_on_probe_input()
   {
     z_probe_debounce = 0;
   }
-  if (z_probe_debounce > 10)
+  if (z_probe_debounce > 30)
   {
     return true;
   }

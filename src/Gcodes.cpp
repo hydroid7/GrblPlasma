@@ -158,7 +158,18 @@ void dump_moves()
     if (MoveStack->peek(MoveStack, x) != NULL) //This element exists
     {
       struct Move_Data *move = (Move_Data*)MoveStack->peek(MoveStack, x);
-      printf(Serial, "-> X: %ld Y: %ld F: %ld\n", move->target.x, move->target.y, move->target.f);
+      if (move->move_type == RAPID_MOVE)
+      {
+        printf(Serial, "RAPID-> X: %ld Y: %ld F: %ld\n", move->target.x, move->target.y, move->target.f);
+      }
+      if (move->move_type == LINE_MOVE)
+      {
+        printf(Serial, "LINE-> X: %ld Y: %ld F: %ld\n", move->target.x, move->target.y, move->target.f);
+      }
+      if (move->move_type == SYNC_MOVE)
+      {
+        printf(Serial, "SYNC_MOVE\n");
+      }
     }
     interrupts();
   }
