@@ -300,7 +300,8 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
     move.target.x = target.x * _Step_Scale.x;
     move.target.y = target.y * _Step_Scale.y;
     move.target.z = 0; //Right now we only need XY for plasma cutting, we'll add in more axis later
-    move.target.f = (long)(target.f / 60.0) * FEED_VALUE_SCALE;
+    double feed_value  = (target.f / 60.0) * FEED_VALUE_SCALE;
+    move.target.f = (long)feed_value;
     move.move_type = move_type;
     XYZ_Double current_position = get_last_moves_target();
     double dominant_accel = _Feed_Accel.x; //Assume X is dominant
