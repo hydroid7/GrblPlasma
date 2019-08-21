@@ -189,7 +189,7 @@ void TorchControl::tick()
       }
     }
   }
-  if (run == true)
+  if (run == true) //We have to be running the torch axis in order to check probe condition
   {
     if (ConditionCallback != NULL)
     {
@@ -204,13 +204,13 @@ void TorchControl::tick()
         }
       }
     }
-    if (wait_until_callback != NULL)
+  }
+  if (wait_until_callback != NULL)
+  {
+    if (millis() > _Wait_Until_Timestamp)
     {
-      if (millis() > _Wait_Until_Timestamp)
-      {
-        wait_until_callback();
-        wait_until_callback = NULL;
-      }
+      wait_until_callback();
+      wait_until_callback = NULL;
     }
   }
 }
