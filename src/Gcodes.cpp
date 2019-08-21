@@ -146,6 +146,7 @@ void hello()
 }
 void dump_moves()
 {
+  torch.dump_move();
   printf(Serial, "*************** Current move ******************\n");
   motion.dump_current_move_to_serial();
   

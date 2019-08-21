@@ -49,6 +49,15 @@ void MotionPlanner::dump_current_move_to_serial()
   {
     printf(Serial, "Motion.run = false\n");
   }
+  if (CurrentMove.waiting_for_sync == true)
+  {
+    printf(Serial, "CurrentMove.waiting_for_sync = true\n");
+  }
+  else
+  {
+    printf(Serial, "CurrentMove.waiting_for_sync = false\n");
+  }
+  
   printf(Serial, "Motion.dx = %ld\n", Motion.dx);
   printf(Serial, "Motion.dy = %ld\n", Motion.dy);
   printf(Serial, "Motion.sx = %ld\n", Motion.sx);
@@ -187,7 +196,10 @@ void MotionPlanner::abort()
   Motion.run = true; //This needs to stay true so the tick can run and do it's job still
   Motion.pendingFeedhold = false;
   Motion.feedholdActive = false;
-  CurrentMove.target = CurrentPosition;
+  CurrentMove.target.x = CurrentPosition.x;
+  CurrentMove.target.y = CurrentPosition.y;
+  CurrentMove.target.z = CurrentPosition.z;
+  CurrentMove.target.f = CurrentPosition.f;
   CurrentMove.waiting_for_sync = false;
   interrupts();
 }
@@ -288,7 +300,7 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
     move.target.x = target.x * _Step_Scale.x;
     move.target.y = target.y * _Step_Scale.y;
     move.target.z = 0; //Right now we only need XY for plasma cutting, we'll add in more axis later
-    move.target.f = (target.f * 0.0166666) * FEED_VALUE_SCALE;
+    move.target.f = (long)(target.f / 60.0) * FEED_VALUE_SCALE;
     move.move_type = move_type;
     XYZ_Double current_position = get_last_moves_target();
     double dominant_accel = _Feed_Accel.x; //Assume X is dominant
@@ -346,7 +358,7 @@ void MotionPlanner::set_axis_scale(int axis, double value)
 void MotionPlanner::motion_set_feedrate(double feed)
 {
   if (Motion.dx == 0 && Motion.dy == 0) return;
-  //if (feed == 0) return; //Can't caclulate a feedrate of zero!
+  if (feed < 0) return; //Something wen't wrong if this function recieves a negative feedrate!
   double x_dist_inches = (double)Motion.dx / _Step_Scale.x;
   double y_dist_inches = (double)Motion.dy / _Step_Scale.y;
   if (feed == 0)
@@ -615,6 +627,8 @@ void MotionPlanner::motion_tick()
           {
             TargetPosition.x = CurrentMove.target.x;
             TargetPosition.y = CurrentMove.target.y;
+            TargetPosition.z = CurrentMove.target.z;
+            TargetPosition.f = CurrentMove.target.f;
             Motion.dx = CurrentMove.Motion.dx;
             Motion.dy = CurrentMove.Motion.dy;
             Motion.sx = CurrentMove.Motion.sx;

@@ -103,6 +103,11 @@ class TorchControl
     void move_tick();
 
     /*
+      Dump variables to serial for debugging
+    */
+    void dump_move();
+
+    /*
       Step the z axis
 
       dir - +1 or -1
@@ -110,14 +115,14 @@ class TorchControl
     void step_z(int dir);
 
   private:
-    bool _Invert_Dir;
+    volatile bool _Invert_Dir;
     double _Step_Scale;
-    unsigned long _Feedrate_Timestamp;
-    unsigned long _Feedrate_delay;
-    long CurrentPosition;
-    long StepsToGo;
-    int StepDir;
-    bool run;
+    volatile unsigned long _Feedrate_Timestamp;
+    volatile unsigned long _Feedrate_delay;
+    volatile long CurrentPosition;
+    volatile long StepsToGo;
+    volatile int StepDir;
+    volatile bool run;
 
     /*
       Calculate feed_delay given feedrate in units/sec

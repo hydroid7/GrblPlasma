@@ -192,8 +192,8 @@ class MotionPlanner
     XYZ_Double _Feed_Jerk;
     XYZ_Double _Feed_Accel;
 
-    XYZ_Long CurrentPosition; //Holds the current position in step units
-    XYZ_Long TargetPosition; //Holds the target position in step units
+    volatile XYZ_Long CurrentPosition; //Holds the current position in step units
+    volatile XYZ_Long TargetPosition; //Holds the target position in step units
     XYZ_Double CurrentVelocity; //Stores velocity for each axis in inches/sec
     double percentage_into_move; //This store the percentage complete through the current move, needs to be global in order to insert feedholds into ramp_map
 
