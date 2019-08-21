@@ -10,13 +10,25 @@
 CallbackData callback;
 MotionSyncConfig syncConfig;
 /* condition check callbacks */
+int z_probe_debounce = 0;
 bool stop_on_probe_input()
 {
   if (digitalRead(Z_PROBE_PIN) == LOW)
   {
+    z_probe_debounce++;
+  }
+  else
+  {
+    z_probe_debounce = 0;
+  }
+  if (z_probe_debounce > 10)
+  {
     return true;
   }
-  return false;
+  else
+  {
+    return false;
+  }
 }
 
 /* condition met callbacks */
