@@ -265,6 +265,10 @@ bool MotionPlanner::push_sync(void (*callback)())
     struct Move_Data move;
     memset(&move, 0, sizeof(struct Move_Data)); //Zero out the Move_Data, this may be too time consuming? May not be neccisary
     move.move_type = SYNC_MOVE;
+    move.target.x = 0;
+    move.target.y = 0;
+    move.target.z = 0;
+    move.target.f = 0;
     move.sync_callback = callback;
     move.waiting_for_sync = false; //This eeds to be toggled true once the callback get called and toggled false once sync_finish is called
     /* Its important that we push a target the same as the last move or it will break the get_last_target_position chain */

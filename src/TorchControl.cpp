@@ -27,7 +27,8 @@ TorchControl::TorchControl()
   StepsToGo = 0;
   StepDir = 0;
   run = false;
-  //Test
+  _Wait_Until_Timestamp = 0;
+  wait_until_callback = NULL;
 
   thc.arc_voltage = 0;
   thc.set_voltage = 0;
@@ -35,6 +36,7 @@ TorchControl::TorchControl()
   thc.voltage_tolorance = 2; //If we are whithin X volts of our target voltage, don't make Z adjustments!
   thc.comp_velocity = 0.166666; //IPS to make adjustments at.
   thc.enabled = true;
+  
 }
 void TorchControl::init()
 {
@@ -99,6 +101,11 @@ void TorchControl::invert_joint_dir(int axis, int value)
       _Invert_Dir = val;
       break;
   }
+}
+void TorchControl::wait_until(unsigned long timestamp, void (*callback)())
+{
+  _Wait_Until_Timestamp = timestamp;
+  wait_until_callback = callback;
 }
 void TorchControl::move_z_incremental(double distance, double feedrate, bool (*condition)(), void (*met)())
 {
@@ -182,6 +189,30 @@ void TorchControl::tick()
       }
     }
   }
+  if (run == true)
+  {
+    if (ConditionCallback != NULL)
+    {
+      if (ConditionCallback() == true)
+      {
+        StepsToGo = 0;
+        ConditionCallback = NULL; //make sure the callback is cleared so it only runs once
+        //The callback is responsable for stopping motion
+        if (ConditionMetCallback != NULL)
+        {
+          ConditionMetCallback();
+        }
+      }
+    }
+    if (wait_until_callback != NULL)
+    {
+      if (millis() > _Wait_Until_Timestamp)
+      {
+        wait_until_callback();
+        wait_until_callback = NULL;
+      }
+    }
+  }
 }
 void TorchControl::dump_move()
 {
@@ -212,19 +243,6 @@ void TorchControl::move_tick()
   noInterrupts();
   if (run == true)
   {
-    if (ConditionCallback != NULL)
-    {
-      if (ConditionCallback() == true)
-      {
-        StepsToGo = 0;
-        ConditionCallback = NULL; //make sure the callback is cleared so it only runs once
-        //The callback is responsable for stopping motion
-        if (ConditionMetCallback != NULL)
-        {
-          ConditionMetCallback();
-        }
-      }
-    }
     if (micros() > _Feedrate_Timestamp + _Feedrate_delay)
     {
       if (StepsToGo > 0)

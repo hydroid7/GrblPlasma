@@ -114,6 +114,14 @@ class TorchControl
     */
     void step_z(int dir);
 
+
+    /*
+      Used for pierce delay and post delay in Sync callbacks
+      
+      Fires callback after millis() is greater than timestamp
+    */
+    void wait_until(unsigned long timestamp, void (*callback)());
+
   private:
     volatile bool _Invert_Dir;
     double _Step_Scale;
@@ -123,6 +131,9 @@ class TorchControl
     volatile long StepsToGo;
     volatile int StepDir;
     volatile bool run;
+
+    unsigned long _Wait_Until_Timestamp;
+    void (*wait_until_callback)();
 
     /*
       Calculate feed_delay given feedrate in units/sec
