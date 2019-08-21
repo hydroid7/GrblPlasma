@@ -57,16 +57,17 @@ void retract_torch_and_finish()
 /*
   Shut off the torch and retract to clearance height
 */
+void post_delay()
+{
+  torch.wait_until(millis() + (1000), resume_motion);
+}
 void torch_off_and_retract()
 {
   printf(Serial, "(torch_off_and_retract)\n");
   torch.extinguish_torch();
-  torch.move_z_incremental(callback.clearanceHeight, syncConfig.z_rapid_feed, NULL, resume_motion);
+  torch.move_z_incremental(callback.clearanceHeight, syncConfig.z_rapid_feed, NULL, post_delay);
 }
 
-/*
-  Light the torch
-*/
 void move_to_cut_height()
 {
   torch.move_z_incremental(callback.pierceHeight - callback.pierceHeight, syncConfig.z_rapid_feed, NULL, resume_motion);
