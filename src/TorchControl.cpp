@@ -227,8 +227,8 @@ void TorchControl::dump_move()
   }
   printf(Serial, "_Invert_Dir = %d\n", _Invert_Dir);
   printf(Serial, "_Step_Scale = %ld\n", _Step_Scale);
-  printf(Serial, "_Feedrate_Timestamp = %ld\n", _Feedrate_Timestamp);
-  printf(Serial, "_Feedrate_delay = %ld\n", _Feedrate_delay);
+  printf(Serial, "_Feedrate_Timestamp = %lu\n", _Feedrate_Timestamp);
+  printf(Serial, "_Feedrate_delay = %lu\n", _Feedrate_delay);
   printf(Serial, "CurrentPosition = %ld\n", CurrentPosition);
   printf(Serial, "StepsToGo = %ld\n", StepsToGo);
   printf(Serial, "StepDir = %ld\n", StepDir);
