@@ -197,7 +197,7 @@ class MotionPlanner
     XYZ_Double CurrentVelocity; //Stores velocity for each axis in inches/sec
     double percentage_into_move; //This store the percentage complete through the current move, needs to be global in order to insert feedholds into ramp_map
 
-    Move_Data CurrentMove; //Holds the current move that has been popped of the top of the move stack
+    volatile Move_Data CurrentMove; //Holds the current move that has been popped of the top of the move stack
     volatile Bresenham_Data Motion;
 
     /*
