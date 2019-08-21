@@ -48,6 +48,7 @@ void probe_torch()
   }
   else
   {
+    z_probe_debounce = 0;
     torch.move_z_incremental(-10, syncConfig.z_probe_feed, stop_on_probe_input, retract_torch);
   }
 }
@@ -57,6 +58,7 @@ void probe_torch()
 */
 void probe_torch_and_finish()
 {
+  z_probe_debounce = 0;
   torch.move_z_incremental(-10, syncConfig.z_probe_feed, stop_on_probe_input, retract_torch_and_finish);
 }
 
