@@ -24,10 +24,20 @@ bool stop_on_probe_input()
 /*
   Move torch towards workpiece until the probe input is met
 */
+void probe_retract_delay()
+{
+  torch.wait_until(millis() + (1000), probe_torch);
+}
 void probe_torch()
 {
-  printf(Serial, "(probe_torch)\n");
-  torch.move_z_incremental(-10, syncConfig.z_probe_feed, stop_on_probe_input, retract_torch);
+  if (digitalRead(Z_PROBE_PIN) == LOW) //Our probe is closed before probe begins, retract torch!
+  {
+    torch.move_z_incremental(callback.clearanceHeight, syncConfig.z_rapid_feed, NULL, probe_retract_delay);
+  }
+  else
+  {
+    torch.move_z_incremental(-10, syncConfig.z_probe_feed, stop_on_probe_input, retract_torch);
+  }
 }
 
 /*
@@ -43,7 +53,6 @@ void probe_torch_and_finish()
 */
 void retract_torch()
 {
-  printf(Serial, "(retract_torch)\n");
   torch.move_z_incremental(syncConfig.floating_head_takeup + callback.pierceHeight, syncConfig.z_rapid_feed, NULL, light_torch_and_pierce_delay);
 }
 /*
