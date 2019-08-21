@@ -101,12 +101,14 @@ void SerialCommand::readSerial() {
       char *crc_command = strtok_r(buffer, crc_delim, &last);
       //printf(Serial, "(SerialCommand->crc_command) %s\n", crc_command);
       char *crc_value = strtok_r(NULL, crc_delim, &last);
+      int calculated = 0;
+      int crc_val = 0;
       if (crc_value != NULL)
       {
-        int crc_val = atoi(crc_value);
+        crc_val = atoi(crc_value);
         int length = 0;
         while (crc_command[length] != '\0') length++;
-        int calculated = checksum(crc_command, length);
+        calculated = checksum(crc_command, length);
         //printf(Serial, "Recieved Checksum: %d, Calculated Checksum: %d\n", crc_val, calculated);
         if (crc_val == calculated)
         {
@@ -125,7 +127,7 @@ void SerialCommand::readSerial() {
       
       if (crc_passed == false)
       {
-        printf(Serial, "crc_fail\n");
+        printf(Serial, "crc_fail: recieved: %d but calculated: %d (buffer: %s)\n", crc_val, calculated, buffer);
       }
       else
       {
