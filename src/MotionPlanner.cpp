@@ -484,14 +484,12 @@ void MotionPlanner::motion_plan_moves_for_continuous_motion_junk()
 }
 void MotionPlanner::tick()
 {
-  if (CurrentMove.waiting_for_sync == true) return; //No need to do anything else here until sync move is finished
   if (CurrentMove.move_type == SYNC_MOVE)
   {
     if (CurrentMove.sync_callback != NULL)
     {
       printf(Serial, "(tick()) Calling sync callback!\n");
       CurrentMove.sync_callback();
-      CurrentMove.waiting_for_sync = true;
     }
     CurrentMove.sync_callback = NULL;
     return;
@@ -629,6 +627,7 @@ void MotionPlanner::motion_tick()
             /* Since we are a sync move, we need to stop motion and wait for our sync callback to be called. sync_finish() will resume motion */
             printf(Serial, "(motion_tick) - pulled sync move!\n");
             Motion.run = false;
+            CurrentMove.waiting_for_sync = true;
           }
           else
           {
