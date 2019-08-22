@@ -330,9 +330,9 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
   }
   else
   {
-    noInterrupts();
+    //noInterrupts();
     MoveStack->add(MoveStack, &move); //Push the move to the stack!
-    interrupts();
+    //interrupts();
     if (Motion.run == false && CurrentMove.waiting_for_sync == false) //If we are not currently in motion and we are not waiting for a sync move to finish, set our feedrate to min feed and start motion
     {
       motion_set_feedrate(move.entry_velocity);
