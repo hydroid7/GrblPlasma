@@ -176,6 +176,7 @@ void MotionPlanner::sync_finished()
   Motion.y_stg = 0;
   Motion.run = true;
   CurrentMove.waiting_for_sync = false;
+  _Feedrate_Timestamp = 0;
   interrupts();
 }
 void MotionPlanner::soft_abort()
@@ -259,7 +260,7 @@ bool MotionPlanner::push_sync(void (*callback)())
 {
   if (MoveStack->isFull(MoveStack))
   {
-    //We need to setup a system that will wait for the stack to have space available agian and send an OK
+    printf(Serial, "(push_sync) ****************************** Stack is full, this should never happen ***************************************\n");
     return false;
   }
   else
@@ -276,7 +277,7 @@ bool MotionPlanner::push_sync(void (*callback)())
     /* Its important that we push a target the same as the last move or it will break the get_last_target_position chain */
     move.target = get_last_moves_target_steps();
 
-    if (MoveStack->isEmpty(MoveStack) && Motion.run == false) //If the first move is a sync move, don't bother pushing it to the stack, just call it here
+    if (MoveStack->isEmpty(MoveStack) && Motion.run == false && CurrentMove.waiting_for_sync == false) //If the first move is a sync move and we're not currently waiting on a sync move to finish, don't bother pushing it to the stack, just call it here
     {
       if (move.sync_callback != NULL)
       {
@@ -297,6 +298,7 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
   if (MoveStack->isFull(MoveStack))
   {
     //We need to setup a system that will wait for the stack to have space available agian and send an OK
+    printf(Serial, "(push_target) ****************************** Stack is full, this should never happen ***************************************\n");
     return false;
   }
   else
@@ -327,7 +329,7 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
     move.exit_velocity = MIN_FEED_RATE;
     move.Motion = motion_calculate_target(get_last_moves_target_steps(), move.target);
     MoveStack->add(MoveStack, &move); //Push the move to the stack!
-    if (Motion.run == false) //If we are not currently in motion, set our feedrate to min feed and start motion
+    if (Motion.run == false && CurrentMove.waiting_for_sync == false) //If we are not currently in motion and we are not waiting for a sync move to finish, set our feedrate to min feed and start motion
     {
       motion_set_feedrate(move.entry_velocity);
       Motion.run = true;
@@ -490,6 +492,11 @@ void MotionPlanner::tick()
     {
       printf(Serial, "(tick()) Calling sync callback!\n");
       CurrentMove.sync_callback();
+      Motion.run = false;
+    }
+    else
+    {
+      printf(Serial, "(tick()) ************************************* CurrentMove.sync_callback() was null before we even tried to call it! **************************************\n");
     }
     CurrentMove.sync_callback = NULL;
     return;
@@ -625,7 +632,7 @@ void MotionPlanner::motion_tick()
           if (CurrentMove.move_type == SYNC_MOVE)
           {
             /* Since we are a sync move, we need to stop motion and wait for our sync callback to be called. sync_finish() will resume motion */
-            printf(Serial, "(motion_tick) - pulled sync move!\n");
+            //printf(Serial, "(motion_tick) - pulled sync move!\n");
             Motion.run = false;
             CurrentMove.waiting_for_sync = true;
           }

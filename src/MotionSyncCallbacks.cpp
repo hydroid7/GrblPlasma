@@ -38,10 +38,11 @@ bool stop_on_probe_input()
 */
 void probe_retract_delay()
 {
-  torch.wait_until(millis() + (1000), probe_torch);
+  torch.wait_until(millis() + 1000, probe_torch);
 }
 void probe_torch()
 {
+  printf(Serial, "***********************(probing torch!)************************\n");
   if (digitalRead(Z_PROBE_PIN) == LOW) //Our probe is closed before probe begins, retract torch!
   {
     torch.move_z_incremental(callback.clearanceHeight, syncConfig.z_rapid_feed, NULL, probe_retract_delay);
