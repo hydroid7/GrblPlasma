@@ -258,6 +258,18 @@ XYZ_Double MotionPlanner::get_current_velocity()
 }
 bool MotionPlanner::push_sync(void (*callback)())
 {
+  struct Move_Data move;
+  memset(&move, 0, sizeof(struct Move_Data)); //Zero out the Move_Data, this may be too time consuming? May not be neccisary
+  move.move_type = SYNC_MOVE;
+  move.target.x = 0;
+  move.target.y = 0;
+  move.target.z = 0;
+  move.target.f = 0;
+  move.sync_callback = callback;
+  move.waiting_for_sync = false; //This eeds to be toggled true once the callback get called and toggled false once sync_finish is called
+  /* Its important that we push a target the same as the last move or it will break the get_last_target_position chain */
+  move.target = get_last_moves_target_steps();
+  
   if (MoveStack->isFull(MoveStack))
   {
     printf(Serial, "(push_sync) ****************************** Stack is full, this should never happen ***************************************\n");
@@ -265,18 +277,6 @@ bool MotionPlanner::push_sync(void (*callback)())
   }
   else
   {
-    struct Move_Data move;
-    memset(&move, 0, sizeof(struct Move_Data)); //Zero out the Move_Data, this may be too time consuming? May not be neccisary
-    move.move_type = SYNC_MOVE;
-    move.target.x = 0;
-    move.target.y = 0;
-    move.target.z = 0;
-    move.target.f = 0;
-    move.sync_callback = callback;
-    move.waiting_for_sync = false; //This eeds to be toggled true once the callback get called and toggled false once sync_finish is called
-    /* Its important that we push a target the same as the last move or it will break the get_last_target_position chain */
-    move.target = get_last_moves_target_steps();
-
     if (MoveStack->isEmpty(MoveStack) && Motion.run == false && CurrentMove.waiting_for_sync == false) //If the first move is a sync move and we're not currently waiting on a sync move to finish, don't bother pushing it to the stack, just call it here
     {
       if (move.sync_callback != NULL)
@@ -288,13 +288,40 @@ bool MotionPlanner::push_sync(void (*callback)())
     }
     else
     {
+      noInterrupts();
       MoveStack->add(MoveStack, &move); //Push the move to the stack!
+      interrupts();
     }
     return true;
   }
 }
 bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
 {
+  struct Move_Data move;
+  memset(&move, 0, sizeof(struct Move_Data)); //Zero out the Move_Data, this may be too time consuming? May not be neccisary
+  move.target.x = target.x * _Step_Scale.x;
+  move.target.y = target.y * _Step_Scale.y;
+  move.target.z = 0; //Right now we only need XY for plasma cutting, we'll add in more axis later
+  double feed_value  = (target.f / 60.0) * FEED_VALUE_SCALE;
+  move.target.f = (long)feed_value;
+  move.move_type = move_type;
+  XYZ_Double current_position = get_last_moves_target();
+  double dominant_accel = _Feed_Accel.x; //Assume X is dominant
+  double dominant_dist = abs(target.x - current_position.x);
+  if (abs(target.y - current_position.y) > abs(target.x - current_position.x))
+  {
+    dominant_accel = _Feed_Accel.y; //Y axis is the dominant axis, use it's accel
+    dominant_dist = abs(target.y - current_position.y);
+  }
+  double peak_feedrate = motion_calculate_feed_from_distance(dominant_accel, dominant_dist / 2); //Calculate feed triangle
+  if (peak_feedrate > (target.f * 0.0166666)) peak_feedrate = (target.f * 0.0166666);
+
+  move.accel_marker = motion_calculate_accel_marker(dominant_accel, peak_feedrate); //We should not be accelerating after this marker compared to distance in.
+  move.deccel_marker = motion_calculate_accel_marker(dominant_accel, peak_feedrate); //We should not be accelerating after this marker compared to distance left.
+  //printf(Serial, "Peak Feedrate is (unit/min): %.4f, Accel Marker is: %.4f, Deccel Marker is: %.4f\n", peak_feedrate * 60, move.accel_marker, move.deccel_marker);
+  move.entry_velocity = MIN_FEED_RATE;
+  move.exit_velocity = MIN_FEED_RATE;
+  move.Motion = motion_calculate_target(get_last_moves_target_steps(), move.target);
   if (MoveStack->isFull(MoveStack))
   {
     //We need to setup a system that will wait for the stack to have space available agian and send an OK
@@ -303,32 +330,9 @@ bool MotionPlanner::push_target(XYZ_Double target, uint8_t move_type)
   }
   else
   {
-    struct Move_Data move;
-    memset(&move, 0, sizeof(struct Move_Data)); //Zero out the Move_Data, this may be too time consuming? May not be neccisary
-    move.target.x = target.x * _Step_Scale.x;
-    move.target.y = target.y * _Step_Scale.y;
-    move.target.z = 0; //Right now we only need XY for plasma cutting, we'll add in more axis later
-    double feed_value  = (target.f / 60.0) * FEED_VALUE_SCALE;
-    move.target.f = (long)feed_value;
-    move.move_type = move_type;
-    XYZ_Double current_position = get_last_moves_target();
-    double dominant_accel = _Feed_Accel.x; //Assume X is dominant
-    double dominant_dist = abs(target.x - current_position.x);
-    if (abs(target.y - current_position.y) > abs(target.x - current_position.x))
-    {
-      dominant_accel = _Feed_Accel.y; //Y axis is the dominant axis, use it's accel
-      dominant_dist = abs(target.y - current_position.y);
-    }
-    double peak_feedrate = motion_calculate_feed_from_distance(dominant_accel, dominant_dist / 2); //Calculate feed triangle
-    if (peak_feedrate > (target.f * 0.0166666)) peak_feedrate = (target.f * 0.0166666);
-
-    move.accel_marker = motion_calculate_accel_marker(dominant_accel, peak_feedrate); //We should not be accelerating after this marker compared to distance in.
-    move.deccel_marker = motion_calculate_accel_marker(dominant_accel, peak_feedrate); //We should not be accelerating after this marker compared to distance left.
-    //printf(Serial, "Peak Feedrate is (unit/min): %.4f, Accel Marker is: %.4f, Deccel Marker is: %.4f\n", peak_feedrate * 60, move.accel_marker, move.deccel_marker);
-    move.entry_velocity = MIN_FEED_RATE;
-    move.exit_velocity = MIN_FEED_RATE;
-    move.Motion = motion_calculate_target(get_last_moves_target_steps(), move.target);
+    noInterrupts();
     MoveStack->add(MoveStack, &move); //Push the move to the stack!
+    interrupts();
     if (Motion.run == false && CurrentMove.waiting_for_sync == false) //If we are not currently in motion and we are not waiting for a sync move to finish, set our feedrate to min feed and start motion
     {
       motion_set_feedrate(move.entry_velocity);
@@ -420,70 +424,6 @@ double MotionPlanner::motion_calculate_feed_from_distance(double accel_rate, dou
   double accel_time = sqrt((0.5 * accel_rate) * distance_into_move) * (1.0/(0.5 * accel_rate));
   return (accel_rate * accel_time);
 }
-void MotionPlanner::motion_plan_moves_for_continuous_motion_junk()
-{
-  /*
-    Iterate through the moves and comparee this move to last move
-    calculate a new exit velocity based on the polar angle of change
-  */
-  printf(Serial, "Moves on stack: %d\n", MoveStack->numElements(MoveStack));
-  int move_index = 0;
-  struct Move_Data *last_move = &CurrentMove;
-  struct Move_Data *this_move = (Move_Data*)MoveStack->peek(MoveStack, move_index);
-  double last_vector_angle = 360; //Zero is 360!
-  while(last_move != NULL && this_move != NULL)
-  {
-    double dominent_axis_jerk = _Feed_Jerk.x;
-    double dominent_axis_accel = _Feed_Accel.x;
-    double x_dist_inches = abs(last_move->target.x - this_move->target.x) / _Step_Scale.x;
-    double y_dist_inches = abs(last_move->target.y - this_move->target.y) / _Step_Scale.y;
-    double dominent_axis_dist = x_dist_inches;
-    if (y_dist_inches > x_dist_inches)
-    {
-      dominent_axis_jerk = _Feed_Jerk.y;
-      dominent_axis_accel = _Feed_Accel.y;
-      dominent_axis_dist = y_dist_inches;
-    }
-    XYZ_Double last_target;
-    last_target.x = last_move->target.x / _Step_Scale.x;
-    last_target.y = last_move->target.y / _Step_Scale.y;
-    XYZ_Double this_target;
-    this_target.x = this_move->target.x / _Step_Scale.x;
-    this_target.y = this_move->target.y / _Step_Scale.y;
-
-    printf(Serial, "(continous motion)-> last_target: X%.4f Y%.4f, this_target: X%.4f Y%.4f\n", last_target.x, last_target.y, this_target.x, this_target.y);
-
-    double vector_angle = motion_get_vector_angle(last_target, this_target);
-    if (vector_angle == 0) vector_angle += 360;
-
-    double angle_of_change = fabs(last_vector_angle - vector_angle);
-
-    printf(Serial, "Angle of change is: %.4f\n", angle_of_change);
-    if (angle_of_change > 180) angle_of_change = 180;
-    double exit_velocity = map(angle_of_change, 0, 180, (double)last_move->target.f / FEED_VALUE_SCALE, dominent_axis_jerk);
-    if (exit_velocity < dominent_axis_jerk) exit_velocity = dominent_axis_jerk;
-    printf(Serial, "New exit/entry velocity is: %.4f\n", exit_velocity);
-
-    double peak_velocity = motion_calculate_feed_from_distance(dominent_axis_accel, dominent_axis_dist / 2.0);
-    if (peak_velocity > ((double)last_move->target.f / FEED_VALUE_SCALE)) peak_velocity = ((double)last_move->target.f / FEED_VALUE_SCALE);
-    printf(Serial, "Peak Velocity is: %.4f\n", peak_velocity);
-
-    //Figure out how much distance is required to accelerate from peak velocity to exit velocity
-    last_move->exit_velocity = exit_velocity;
-    last_move->deccel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
-    printf(Serial, "Last Move Decel Marker is: %.4f\n", last_move->deccel_marker);
-
-    this_move->entry_velocity = exit_velocity;
-    this_move->accel_marker = motion_calculate_accel_marker(dominent_axis_accel, peak_velocity - exit_velocity);
-    printf(Serial, "This Move Accel Marker is: %.4f\n", this_move->accel_marker);
-
-    last_vector_angle = vector_angle;
-    //Update move data to next position
-    move_index++;
-    last_move = (Move_Data*)MoveStack->peek(MoveStack, move_index);
-    this_move = (Move_Data*)MoveStack->peek(MoveStack, move_index+1);
-  }
-}
 void MotionPlanner::tick()
 {
   if (CurrentMove.move_type == SYNC_MOVE)
@@ -493,10 +433,6 @@ void MotionPlanner::tick()
       printf(Serial, "(tick()) Calling sync callback!\n");
       CurrentMove.sync_callback();
       Motion.run = false;
-    }
-    else
-    {
-      printf(Serial, "(tick()) ************************************* CurrentMove.sync_callback() was null before we even tried to call it! **************************************\n");
     }
     CurrentMove.sync_callback = NULL;
     return;
@@ -627,7 +563,7 @@ void MotionPlanner::motion_tick()
       }
       else
       {
-        if (MoveStack->pull(MoveStack, &CurrentMove)) //There are pending moves on the stack!
+        if (MoveStack->pull(MoveStack, (void*)&CurrentMove)) //There are pending moves on the stack!
         {
           if (CurrentMove.move_type == SYNC_MOVE)
           {
