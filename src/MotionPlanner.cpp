@@ -558,17 +558,13 @@ void MotionPlanner::motion_tick()
       if (dominent_axis_stg > 0)
       {
         //Step our axis one tick at a time with linear interpolation!
-        if (Motion.err > -Motion.dx) { 
-          if (Motion.x_stg > 0 ) Motion.err -= Motion.dy; CurrentPosition.x += Motion.sx; Motion.x_stg--; motion_step_x(Motion.sx);
-        }
-        if (Motion.err < Motion.dy) { 
-          if (Motion.y_stg > 0 ) Motion.err += Motion.dx; CurrentPosition.y += Motion.sy; Motion.y_stg--; motion_step_y(Motion.sy);
-        }
+        if (Motion.err > -Motion.dx && Motion.x_stg > 0) { Motion.err -= Motion.dy; CurrentPosition.x += Motion.sx; Motion.x_stg--; motion_step_x(Motion.sx); }
+        if (Motion.err < Motion.dy && Motion.y_stg > 0) { Motion.err += Motion.dx; CurrentPosition.y += Motion.sy; Motion.y_stg--; motion_step_y(Motion.sy); }
       }
       else
       {
         //Finally safe to continue to next move
-        printf(Serial, "Move finished with X_STG: %d and Y_STG: %d\n", Motion.x_stg, Motion.y_stg);
+        //printf(Serial, "Move finished with X_STG: %ld and Y_STG: %ld\n", Motion.x_stg, Motion.y_stg);
         if (MoveStack->pull(MoveStack, (void*)&CurrentMove)) //There are pending moves on the stack!
         {
           if (CurrentMove.move_type == SYNC_MOVE)
@@ -644,9 +640,9 @@ void MotionPlanner::motion_step_x(int dir)
     digitalWrite(X_DIR_PIN, !_Invert_X_Dir);
   }
   delayMicroseconds(20); //Delay for direction change
-  digitalWrite(X_STEP_PIN, LOW);
-  delayMicroseconds(20);
   digitalWrite(X_STEP_PIN, HIGH);
+  delayMicroseconds(20);
+  digitalWrite(X_STEP_PIN, LOW);
 }
 void MotionPlanner::motion_step_y(int dir)
 {
@@ -661,9 +657,9 @@ void MotionPlanner::motion_step_y(int dir)
     digitalWrite(Y2_DIR_PIN, !_Invert_Y2_Dir);
   }
   delayMicroseconds(20); //Delay for direction change
-  digitalWrite(Y1_STEP_PIN, LOW);
-  digitalWrite(Y2_STEP_PIN, LOW);
-  delayMicroseconds(20);
   digitalWrite(Y1_STEP_PIN, HIGH);
   digitalWrite(Y2_STEP_PIN, HIGH);
+  delayMicroseconds(20);
+  digitalWrite(Y1_STEP_PIN, LOW);
+  digitalWrite(Y2_STEP_PIN, LOW);
 }
