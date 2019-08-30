@@ -558,51 +558,46 @@ void MotionPlanner::motion_tick()
       if (dominent_axis_stg > 0)
       {
         //Step our axis one tick at a time with linear interpolation!
-        if (Motion.err > -Motion.dx) { Motion.err -= Motion.dy; CurrentPosition.x += Motion.sx; Motion.x_stg--; motion_step_x(Motion.sx); }
-        if (Motion.err < Motion.dy) { Motion.err += Motion.dx; CurrentPosition.y += Motion.sy; Motion.y_stg--; motion_step_y(Motion.sy); }
+        if (Motion.err > -Motion.dx) { 
+          if (Motion.x_stg > 0 ) Motion.err -= Motion.dy; CurrentPosition.x += Motion.sx; Motion.x_stg--; motion_step_x(Motion.sx);
+        }
+        if (Motion.err < Motion.dy) { 
+          if (Motion.y_stg > 0 ) Motion.err += Motion.dx; CurrentPosition.y += Motion.sy; Motion.y_stg--; motion_step_y(Motion.sy);
+        }
       }
       else
       {
-        /*There's situations where there are steps to go on the non-dominent axixes to precion errors. We need to travel those but can't do it while interpolating*/
-        if (Motion.x_stg > 0 || Motion.y_stg > 0)
+        //Finally safe to continue to next move
+        printf(Serial, "Move finished with X_STG: %d and Y_STG: %d\n", Motion.x_stg, Motion.y_stg);
+        if (MoveStack->pull(MoveStack, (void*)&CurrentMove)) //There are pending moves on the stack!
         {
-          //Step our axis one tick at a time until there is no following error on the endpoint
-          if (Motion.x_stg > 0) { CurrentPosition.x += Motion.sx; Motion.x_stg--; motion_step_x(Motion.sx); }
-          if (Motion.y_stg > 0) { CurrentPosition.y += Motion.sy; Motion.y_stg--; motion_step_y(Motion.sy); }
-        }
-        else
-        {
-          //Finally safe to continue to next move
-          if (MoveStack->pull(MoveStack, (void*)&CurrentMove)) //There are pending moves on the stack!
+          if (CurrentMove.move_type == SYNC_MOVE)
           {
-            if (CurrentMove.move_type == SYNC_MOVE)
-            {
-              /* Since we are a sync move, we need to stop motion and wait for our sync callback to be called. sync_finish() will resume motion */
-              //printf(Serial, "(motion_tick) - pulled sync move!\n");
-              Motion.run = false;
-              CurrentMove.waiting_for_sync = true;
-            }
-            else
-            {
-              TargetPosition.x = CurrentMove.target.x;
-              TargetPosition.y = CurrentMove.target.y;
-              TargetPosition.z = CurrentMove.target.z;
-              TargetPosition.f = CurrentMove.target.f;
-              Motion.dx = CurrentMove.Motion.dx;
-              Motion.dy = CurrentMove.Motion.dy;
-              Motion.sx = CurrentMove.Motion.sx;
-              Motion.sy = CurrentMove.Motion.sy;
-              Motion.err = CurrentMove.Motion.err;
-              Motion.x_stg = CurrentMove.Motion.x_stg;
-              Motion.y_stg = CurrentMove.Motion.y_stg;
-            }
+            /* Since we are a sync move, we need to stop motion and wait for our sync callback to be called. sync_finish() will resume motion */
+            //printf(Serial, "(motion_tick) - pulled sync move!\n");
+            Motion.run = false;
+            CurrentMove.waiting_for_sync = true;
           }
           else
           {
-            CurrentVelocity.x = 0;
-            CurrentVelocity.y = 0;
-            abort();
+            TargetPosition.x = CurrentMove.target.x;
+            TargetPosition.y = CurrentMove.target.y;
+            TargetPosition.z = CurrentMove.target.z;
+            TargetPosition.f = CurrentMove.target.f;
+            Motion.dx = CurrentMove.Motion.dx;
+            Motion.dy = CurrentMove.Motion.dy;
+            Motion.sx = CurrentMove.Motion.sx;
+            Motion.sy = CurrentMove.Motion.sy;
+            Motion.err = CurrentMove.Motion.err;
+            Motion.x_stg = CurrentMove.Motion.x_stg;
+            Motion.y_stg = CurrentMove.Motion.y_stg;
           }
+        }
+        else
+        {
+          CurrentVelocity.x = 0;
+          CurrentVelocity.y = 0;
+          abort();
         }
       }
       _Feedrate_Timestamp = micros();
