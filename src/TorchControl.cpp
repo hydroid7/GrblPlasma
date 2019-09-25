@@ -175,10 +175,10 @@ void TorchControl::sample_voltage()
     thc.readIndex = 0;
   }
   double adc_reading = (double)(thc.total / thc.numReadings);
-  double actual_voltage = mapdouble(adc_reading, 45, 950, 0, 6);
-  thc.arc_voltage = fabs(actual_voltage) * 50.00; //Scaled to 50:1
+  //double actual_voltage = mapdouble(adc_reading, 45, 950, 0, 6);
+  //thc.arc_voltage = fabs(actual_voltage) * 50.00; //Scaled to 50:1
 
-  //thc.arc_voltage = adc_reading;
+  thc.arc_voltage = adc_reading;
 }
 void TorchControl::tick()
 {
