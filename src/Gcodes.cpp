@@ -140,8 +140,10 @@ void set_thc_config()
   char *pin = sCmd.next();
   char *filtering = sCmd.next();
   char *velocity = sCmd.next();
+  char *zero = sCmd.next();
+  char *one_hundred = sCmd.next();
 
-  if (pin != NULL && filtering != NULL && velocity != NULL)
+  if (pin != NULL && filtering != NULL && velocity != NULL && zero != NULL && one_hundred != NULL)
   {
     if (pin == "A19")
     {
@@ -173,12 +175,16 @@ void set_thc_config()
     }
     
     torch.set_thc_velocity(atof(velocity) / 60.0);
+
+    torch.set_thc_adc_calibration(atoi(zero), atoi(one_hundred));
+    printf(Serial, "Setting thc adc calibration zero: %d, one_hundred: %d\n", atoi(zero), atoi(one_hundred));
+
     printf(Serial, "Setting thc comp velocity to %.4f inches/min (%.4f inches/sec)\n", atof(velocity), atof(velocity) / 60.0);
     
   }
   else
   {
-    printf(Serial, "Command usage: set_thc_config <Analog Pin Name> <filter cycle between 0 and 20,000> <comp velocity in inches/min>\n");
+    printf(Serial, "Command usage: set_thc_config <Analog Pin Name> <filter cycle between 0 and 20,000> <comp velocity in inches/min> <adc value at 0 volts> <adc value at 100 volts>\n");
   }
 }
 void position_report()

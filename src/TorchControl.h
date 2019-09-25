@@ -17,6 +17,8 @@ struct THC_Data {
     bool enabled;
     bool torch_on;
     int pin; //Analog input pin, default is set in Machine.h
+    int adc_at_zero;
+    int adc_at_one_hundred;
 
     int numReadings; //Number of readings to average from
     int readings[MAX_NUMBER_OF_READINGS];      // the readings from the analog input
@@ -89,6 +91,10 @@ class TorchControl
       Sets the ATHC comp velocity in inches/sec
     */
     void set_thc_velocity(int vel);
+    /*
+      Sets the ATHC adc calibration
+    */
+    void set_thc_adc_calibration(int zero, int one_hundred);
 
     /*
       Sets the Z axis scale
