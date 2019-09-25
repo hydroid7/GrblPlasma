@@ -88,9 +88,9 @@ class TorchControl
     void set_thc_filter(int num);
 
     /*
-      Sets the ATHC comp velocity in inches/sec
+      Sets the ATHC comp velocity in units/sec
     */
-    void set_thc_velocity(int vel);
+    void set_thc_velocity(double vel);
     /*
       Sets the ATHC adc calibration
     */

@@ -30,6 +30,8 @@ TorchControl::TorchControl()
   _Wait_Until_Timestamp = 0;
   wait_until_callback = NULL;
 
+  thc.adc_at_zero = 35;
+  thc.adc_at_one_hundred = 850;
   thc.pin = ARC_VOLTAGE_PIN;
   thc.arc_voltage = 0;
   thc.set_voltage = 0;
@@ -97,7 +99,7 @@ void TorchControl::set_thc_filter(int num)
   thc.total = 0;
   thc.average = 0;
 }
-void TorchControl::set_thc_velocity(int vel)
+void TorchControl::set_thc_velocity(double vel)
 {
   thc.comp_velocity = vel;
 }
