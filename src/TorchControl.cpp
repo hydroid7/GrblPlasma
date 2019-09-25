@@ -292,9 +292,9 @@ void TorchControl::step_z(int dir)
   {
     digitalWrite(Z_DIR_PIN, _Invert_Dir);
   }
-  delayMicroseconds(20); //Delay for direction change
+  //delayMicroseconds(30); //Delay for direction change
   digitalWrite(Z_STEP_PIN, LOW);
-  delayMicroseconds(20);
+  delayMicroseconds(50);
   digitalWrite(Z_STEP_PIN, HIGH);
   //printf(Serial, "Z position: %ld\n", CurrentPosition);
 }

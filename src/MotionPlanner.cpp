@@ -639,9 +639,9 @@ void MotionPlanner::motion_step_x(int dir)
   {
     digitalWrite(X_DIR_PIN, !_Invert_X_Dir);
   }
-  delayMicroseconds(20); //Delay for direction change
+  //delayMicroseconds(100); //Delay for direction change
   digitalWrite(X_STEP_PIN, HIGH);
-  delayMicroseconds(20);
+  delayMicroseconds(50);
   digitalWrite(X_STEP_PIN, LOW);
 }
 void MotionPlanner::motion_step_y(int dir)
@@ -656,10 +656,10 @@ void MotionPlanner::motion_step_y(int dir)
     digitalWrite(Y1_DIR_PIN, !_Invert_Y1_Dir);
     digitalWrite(Y2_DIR_PIN, !_Invert_Y2_Dir);
   }
-  delayMicroseconds(20); //Delay for direction change
+  //delayMicroseconds(100); //Delay for direction change
   digitalWrite(Y1_STEP_PIN, HIGH);
   digitalWrite(Y2_STEP_PIN, HIGH);
-  delayMicroseconds(20);
+  delayMicroseconds(50);
   digitalWrite(Y1_STEP_PIN, LOW);
   digitalWrite(Y2_STEP_PIN, LOW);
 }
