@@ -43,6 +43,7 @@ void retract_torch();
 void fire_torch();
 void light_torch_and_pierce_delay();
 void torch_off_and_retract();
+void retract_torch_delay();
 
 void resume_motion();
 

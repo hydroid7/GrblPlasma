@@ -50,7 +50,7 @@ void probe_torch()
   else
   {
     z_probe_debounce = 0;
-    torch.move_z_incremental(-10, syncConfig.z_probe_feed, stop_on_probe_input, retract_torch);
+    torch.move_z_incremental(-10, syncConfig.z_probe_feed, stop_on_probe_input, retract_torch_delay);
   }
 }
 
@@ -62,7 +62,13 @@ void probe_torch_and_finish()
   z_probe_debounce = 0;
   torch.move_z_incremental(-10, syncConfig.z_probe_feed, stop_on_probe_input, retract_torch_and_finish);
 }
-
+/*
+  Delay before retract to let Z axis come to a complete stop
+*/
+void retract_torch_delay()
+{
+  torch.wait_until(millis() + 500, retract_torch);
+}
 /*
   Retract to peirce height (Add the amount of floating head slop)
 */
@@ -89,6 +95,7 @@ void torch_off_and_retract()
 {
   printf(Serial, "(torch_off_and_retract)\n");
   torch.extinguish_torch();
+  torch.cancel(); //Cancel THC move that could possibly be happening right now
   torch.wait_until(millis() + (1000), torch_retract);
 }
 
