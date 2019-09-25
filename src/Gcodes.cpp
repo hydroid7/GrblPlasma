@@ -178,7 +178,7 @@ void set_thc_config()
   }
   else
   {
-    printf(Serial, "Command usage: set_thc_pin <Analog Pin Name> <filter cycle between 0 and 20,000> <comp velocity in inches/min>\n");
+    printf(Serial, "Command usage: set_thc_config <Analog Pin Name> <filter cycle between 0 and 20,000> <comp velocity in inches/min>\n");
   }
 }
 void position_report()
