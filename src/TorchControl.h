@@ -6,7 +6,7 @@
 
 #include "Arduino.h"
 
-#define NUMBER_OF_READINGS 4000
+#define MAX_NUMBER_OF_READINGS 20000
 
 struct THC_Data {
     double arc_voltage;
@@ -16,9 +16,10 @@ struct THC_Data {
     double comp_velocity; //IPM to make adjustments at.
     bool enabled;
     bool torch_on;
+    int pin; //Analog input pin, default is set in Machine.h
 
     int numReadings; //Number of readings to average from
-    int readings[NUMBER_OF_READINGS];      // the readings from the analog input
+    int readings[MAX_NUMBER_OF_READINGS];      // the readings from the analog input
     int readIndex;              // the index of the current reading
     double total;               // the running total
     double average;             // the average
@@ -73,6 +74,21 @@ class TorchControl
       Sets the ATHC taget voltage
     */
     void set_arc_voltage(double volts);
+
+    /*
+      Sets the ATHC analog input
+    */
+    void set_thc_pin(int pin);
+
+    /*
+      Sets the ATHC filtering cycles
+    */
+    void set_thc_filter(int num);
+
+    /*
+      Sets the ATHC comp velocity in inches/sec
+    */
+    void set_thc_velocity(int vel);
 
     /*
       Sets the Z axis scale

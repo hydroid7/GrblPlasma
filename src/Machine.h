@@ -7,7 +7,7 @@
 */
 #define ARC_START_PIN 28
 #define ARC_OK_PIN 14
-#define ARC_VOLTAGE_PIN A19
+#define ARC_VOLTAGE_PIN A19 // Default defininition, set_thc_pin overides
 
 #define X_ENABLE_PIN 6
 #define X_STEP_PIN 0

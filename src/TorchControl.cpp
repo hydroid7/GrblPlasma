@@ -30,6 +30,7 @@ TorchControl::TorchControl()
   _Wait_Until_Timestamp = 0;
   wait_until_callback = NULL;
 
+  thc.pin = ARC_VOLTAGE_PIN;
   thc.arc_voltage = 0;
   thc.set_voltage = 0;
   //thc.velocity_tolorance = 0.083; //Must be within X inches/min to are target velocity before ATHC starts to comp Z height
@@ -60,8 +61,8 @@ void TorchControl::init()
   }
   _Feedrate_delay = cycle_frequency_from_feedrate(MIN_FEED_RATE);
 
-  thc.numReadings = NUMBER_OF_READINGS;
-  for (int x = 0; x < NUMBER_OF_READINGS; x++) thc.readings[x] = 0;
+  thc.numReadings = MAX_NUMBER_OF_READINGS;
+  for (int x = 0; x < MAX_NUMBER_OF_READINGS; x++) thc.readings[x] = 0;
   thc.readIndex = 0;
   thc.total = 0;
   thc.average = 0;
@@ -83,6 +84,22 @@ double TorchControl::get_set_voltage()
 void TorchControl::set_arc_voltage(double volts)
 {
   thc.set_voltage = volts;
+}
+void TorchControl::set_thc_pin(int pin)
+{
+  thc.pin = pin;
+}
+void TorchControl::set_thc_filter(int num)
+{
+  thc.numReadings = num;
+  for (int x = 0; x < num; x++) thc.readings[x] = 0;
+  thc.readIndex = 0;
+  thc.total = 0;
+  thc.average = 0;
+}
+void TorchControl::set_thc_velocity(int vel)
+{
+  thc.comp_velocity = vel;
 }
 void TorchControl::set_axis_scale(int axis, double value)
 {
@@ -151,7 +168,7 @@ bool TorchControl::IsInTolerance(double a, double b, double t)
 void TorchControl::sample_voltage()
 {
   thc.total = thc.total - thc.readings[thc.readIndex];
-  thc.readings[thc.readIndex] = analogRead(ARC_VOLTAGE_PIN);
+  thc.readings[thc.readIndex] = analogRead(thc.pin);
   thc.total = thc.total + thc.readings[thc.readIndex];
   thc.readIndex++;
   if (thc.readIndex >= thc.numReadings) {

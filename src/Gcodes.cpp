@@ -135,6 +135,52 @@ void set_torch()
     printf(Serial, "Command usage: set_torch <rapid IPM> <probe IPM> <floating head takeup in units>\n");
   }
 }
+void set_thc_config()
+{
+  char *pin = sCmd.next();
+  char *filtering = sCmd.next();
+  char *velocity = sCmd.next();
+
+  if (pin != NULL && filtering != NULL && velocity != NULL)
+  {
+    if (pin == "A19")
+    {
+      torch.set_thc_pin(A19);
+      printf(Serial, "Setting thc pin to: %s\n", pin);
+    }
+    else if (pin == "A20")
+    {
+      torch.set_thc_pin(A20);
+      printf(Serial, "Setting thc pin to: %s\n", pin);
+    }
+    else if (pin == "A21")
+    {
+      torch.set_thc_pin(A21);
+      printf(Serial, "Setting thc pin to: %s\n", pin);
+    }
+    else
+    {
+      printf(Serial, "Unknown Pin!\n");
+    }
+    if (atoi(filtering) > 0 && atoi(filtering) < 20000)
+    {
+      torch.set_thc_filter(atoi(filtering));
+      printf(Serial, "Setting thc filter to: %d\n", atoi(filtering));
+    }
+    else
+    {
+      printf(Serial, "thc filter must be between 0 and 20,000\n");
+    }
+    
+    torch.set_thc_velocity(atof(velocity) / 60.0);
+    printf(Serial, "Setting thc comp velocity to %.4f inches/min (%.4f inches/sec)\n", atof(velocity), atof(velocity) / 60.0);
+    
+  }
+  else
+  {
+    printf(Serial, "Command usage: set_thc_pin <Analog Pin Name> <filter cycle between 0 and 20,000>\n");
+  }
+}
 void position_report()
 {
   XYZ_Double position = motion.get_current_position();
@@ -350,7 +396,8 @@ void gcodes_init()
   sCmd.addCommand("invert_dir", invert_dir);
   sCmd.addCommand("set_scale", set_scale);
   sCmd.addCommand("set_torch", set_torch);
-  
+  sCmd.addCommand("set_thc_config", set_thc_config);
+
 
   //All Gcode commands below here
   sCmd.addCommand("G0", rapid_move);
