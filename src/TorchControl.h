@@ -6,7 +6,7 @@
 
 #include "Arduino.h"
 
-#define NUMBER_OF_READINGS 1500
+#define NUMBER_OF_READINGS 4000
 
 struct THC_Data {
     double arc_voltage;

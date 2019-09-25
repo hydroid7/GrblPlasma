@@ -158,19 +158,15 @@ void TorchControl::sample_voltage()
     thc.readIndex = 0;
   }
   double adc_reading = (double)(thc.total / thc.numReadings);
-  /*
-    500 adc = 0V
-    301 adc = 2.825V
-  */
-  double actual_voltage = mapdouble(adc_reading, 500, 0, 0.00, 7);
-  thc.arc_voltage = actual_voltage * 50.00; //Scaled to 50:1
+  double actual_voltage = mapdouble(adc_reading, 45, 950, 0, 6);
+  thc.arc_voltage = fabs(actual_voltage) * 50.00; //Scaled to 50:1
 
   //thc.arc_voltage = adc_reading;
 }
 void TorchControl::tick()
 {
   sample_voltage();
-  if (thc.torch_on == true && thc.enabled == true && thc.set_voltage > 10 && thc.arc_voltage > 10 && millis() > (torch_fired_timestamp + (3 * 1000)))
+  if (thc.torch_on == true && thc.enabled == true && thc.set_voltage > 30 && thc.arc_voltage > 30 && millis() > (torch_fired_timestamp + (3 * 1000)))
   {
     if (digitalRead(ARC_OK_PIN) == LOW) //Make sure we have our ARC_OK signal, otherwise something is wrong and we should not comp torch!
     {
