@@ -196,6 +196,28 @@ void hello()
 {
   printf(Serial, "Hello at: %d\n", millis());
 }
+void dump_inputs()
+{
+  printf(Serial, "*************** Input Pins ******************\n");
+  if (digitalRead(ARC_OK_PIN) == HIGH)
+  {
+    printf(Serial, "ARC_OK_PIN = HIGH\n");
+  }
+  else
+  {
+    printf(Serial, "ARC_OK_PIN = LOW\n");
+  }
+
+  if (digitalRead(Z_PROBE_PIN) == HIGH)
+  {
+    printf(Serial, "Z_PROBE_PIN = HIGH\n");
+  }
+  else
+  {
+    printf(Serial, "Z_PROBE_PIN = LOW\n");
+  }
+  
+}
 void dump_moves()
 {
   torch.dump_move();
@@ -390,6 +412,7 @@ void gcodes_init()
   sCmd.addCommand("init", init);
   sCmd.addCommand("hello", hello);
   sCmd.addCommand("dump_moves", dump_moves);
+  sCmd.addCommand("dump_inputs", dump_inputs);
 
   //Real-Time commands, these commands should not return an OK!
   sCmd.addCommand("?", position_report);
