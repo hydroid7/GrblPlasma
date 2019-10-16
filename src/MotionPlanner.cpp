@@ -182,8 +182,26 @@ void MotionPlanner::sync_finished()
 }
 void MotionPlanner::soft_abort()
 {
-  Motion.pendingSoftAbort = true;
-  feedhold(); //This will plan a deceleration then call "abort()" once machine is at MIN_FEED_RATE
+  if (CurrentMove.waiting_for_sync == true)
+  {
+    //We are a sync move. Exstinguish torch and stop now
+    torch.extinguish_torch();
+    torch.cancel(); //Cancel THC move that could possibly be happening right now
+    abort();
+  }
+  else if (CurrentMove.move_type == RAPID_MOVE)
+  {
+    //Plan a deceleration before abort gets called!
+    Motion.pendingSoftAbort = true;
+    feedhold(); //This will plan a deceleration then call "abort()" once machine is at MIN_FEED_RATE
+  }
+  else if (CurrentMove.move_type == LINE_MOVE)
+  {
+    //We are a line move and are presumably cutting with the torch on, so shut it off and abort
+    torch.extinguish_torch();
+    torch.cancel(); //Cancel THC move that could possibly be happening right now
+    abort();
+  }
 }
 void MotionPlanner::abort()
 {
