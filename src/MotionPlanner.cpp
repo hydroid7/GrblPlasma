@@ -176,6 +176,7 @@ void MotionPlanner::sync_finished()
   Motion.y_stg = 0;
   Motion.run = true;
   CurrentMove.waiting_for_sync = false;
+  CurrentMove.sync_callback = NULL;
   _Feedrate_Timestamp = 0;
   interrupts();
 }
@@ -203,6 +204,7 @@ void MotionPlanner::abort()
   CurrentMove.target.z = CurrentPosition.z;
   CurrentMove.target.f = CurrentPosition.f;
   CurrentMove.waiting_for_sync = false;
+  CurrentMove.sync_callback = NULL;
   _Feedrate_Timestamp = 0;
   interrupts();
 }
