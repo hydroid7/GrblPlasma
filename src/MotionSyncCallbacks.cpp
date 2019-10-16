@@ -83,6 +83,13 @@ void retract_torch_and_finish()
 {
   torch.move_z_incremental(syncConfig.floating_head_takeup + callback.pierceHeight, syncConfig.z_rapid_feed, NULL, resume_motion);
 }
+/*
+  Retract to peirce height. Retry torch fire
+*/
+void delay_and_retry()
+{
+  torch.wait_until(millis() + (1000), probe_torch);
+}
 
 /*
   Shut off the torch and retract to clearance height
@@ -101,7 +108,28 @@ void torch_off_and_retract()
 
 void move_to_cut_height()
 {
-  torch.move_z_incremental(callback.pierceHeight - callback.pierceHeight, syncConfig.z_rapid_feed, NULL, resume_motion);
+  /* 
+      Now the torch is fired and we are currently at our pierce height. If Arc-OK is enabled, check to make sure we have an Arc OK signal.
+      - If so, move to cut height and resume_motion
+      - If not, torch_off_and_retract then try again
+   */
+  if (torch.get_arc_ok_enable() == true)
+  {
+    if (digitalRead(ARC_OK_PIN) == LOW) //We have an ARC okay signal, continue into cut!
+    {
+      torch.move_z_incremental(callback.pierceHeight - callback.pierceHeight, syncConfig.z_rapid_feed, NULL, resume_motion);
+    }
+    else //We don't have an Arc Ok signal, Retry!
+    {
+      torch.extinguish_torch();
+      torch.cancel(); //Cancel THC move that could possibly be happening right now
+      torch.move_z_incremental(syncConfig.floating_head_takeup + callback.pierceHeight, syncConfig.z_rapid_feed, NULL, delay_and_retry);
+    }
+  }
+  else //No Arc Ok signal, don't try to retry....
+  {
+    torch.move_z_incremental(callback.pierceHeight - callback.pierceHeight, syncConfig.z_rapid_feed, NULL, resume_motion);
+  }
 }
 void light_torch_and_pierce_delay()
 {

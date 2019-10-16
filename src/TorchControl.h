@@ -63,6 +63,11 @@ class TorchControl
     void move_z_incremental(double distance, double feedrate, bool (*condition)(), void (*met)());
 
     /*
+      Get arc ok enable. returns true if it is and false if it is not
+    */
+    bool get_arc_ok_enable();
+
+    /*
       Return the current measured and scaled arc voltage
     */
     double get_arc_voltage();
@@ -95,6 +100,11 @@ class TorchControl
       Sets the ATHC adc calibration
     */
     void set_thc_adc_calibration(int zero, int one_hundred);
+
+    /*
+      Sets arc ok enable=1 disable=0
+    */
+    void set_arc_ok_check(int set);
 
     /*
       Sets the Z axis scale
@@ -146,6 +156,7 @@ class TorchControl
 
   private:
     volatile bool _Invert_Dir;
+    volatile bool _Arc_Okay_Enabled;
     double _Step_Scale;
     volatile unsigned long _Feedrate_Timestamp;
     volatile unsigned long _Feedrate_delay;

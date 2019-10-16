@@ -70,6 +70,7 @@ void TorchControl::init()
   thc.total = 0;
   thc.average = 0;
   thc.torch_on = false;
+  _Arc_Okay_Enabled = true;
 }
 void TorchControl::cancel()
 {
@@ -83,6 +84,15 @@ double TorchControl::get_arc_voltage()
 double TorchControl::get_set_voltage()
 {
   return thc.set_voltage;
+}
+bool TorchControl::get_arc_ok_enable()
+{
+  return _Arc_Okay_Enabled;
+}
+void TorchControl::set_arc_ok_check(int set)
+{
+  if (set == 0) _Arc_Okay_Enabled = false;
+  if (set == 1) _Arc_Okay_Enabled = true;
 }
 void TorchControl::set_arc_voltage(double volts)
 {

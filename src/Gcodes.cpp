@@ -20,11 +20,6 @@ void unrecognized(const char *command)
 }
 void fire_torch()
 {
-  //Load some default values that will work most of the time
-  callback.pierceHeight = 0.0625;
-  callback.pierceDelay = 1.5;
-  callback.cutHeight = 0.085;
-
   char *pierceHeight = sCmd.next();
   char *pierceDelay = sCmd.next();
   char *cutHeight = sCmd.next();
@@ -38,7 +33,6 @@ void fire_torch()
 }
 void torch_off()
 {
-  callback.clearanceHeight = 2;
   motion.push_sync(&torch_off_and_retract);
   OkayToSend();
 }
@@ -122,18 +116,41 @@ void set_torch()
   char *rapid = sCmd.next();
   char *probe = sCmd.next();
   char *takeup = sCmd.next();
-
-  if (rapid != NULL && probe != NULL && takeup != NULL)
+  char *clearance = sCmd.next();
+  if (rapid != NULL && probe != NULL && takeup != NULL && clearance != NULL)
   {
     syncConfig.z_rapid_feed = atof(rapid) / 60;
     syncConfig.z_probe_feed  = atof(probe) / 60;
     syncConfig.floating_head_takeup = atof(takeup);
-    printf(Serial, "Setting torch parameters\n\tRapid Feed: %.4f\n\tProbe Feed: %.4f\n\tFloating head takeup: %.4f\n", syncConfig.z_rapid_feed, syncConfig.z_probe_feed, syncConfig.floating_head_takeup);
+    callback.clearanceHeight = atof(takeup);
+    printf(Serial, "Setting torch parameters\n\tRapid Feed: %.4f\n\tProbe Feed: %.4f\n\tFloating head takeup: %.4f\n\tClearance Height: %.4f\n", syncConfig.z_rapid_feed, syncConfig.z_probe_feed, syncConfig.floating_head_takeup, callback.clearanceHeight);
   }
   else
   {
-    printf(Serial, "Command usage: set_torch <rapid IPM> <probe IPM> <floating head takeup in units>\n");
+    printf(Serial, "Command usage: set_torch <rapid IPM> <probe IPM> <floating head takeup in units> <clearance Height in units>\n");
   }
+}
+void set_arc_ok_enable()
+{
+  char *enable = sCmd.next();
+  if (enable != NULL)
+  {
+    if (atoi(enable) == 1)
+    {
+      printf(Serial, "Arc OK Check is enabled!\n");
+      torch.set_arc_ok_check(1);
+    }
+    else
+    {
+      printf(Serial, "Arc OK Check is disabled!\n");
+      torch.set_arc_ok_check(0);
+    }
+  }
+  else
+  {
+    printf(Serial, "Command usage: set_arc_ok_enable 1\nenable = 1, disable = 0\n");
+  }
+  
 }
 void set_thc_config()
 {
@@ -145,17 +162,17 @@ void set_thc_config()
 
   if (pin != NULL && filtering != NULL && velocity != NULL && zero != NULL && one_hundred != NULL)
   {
-    if (pin == "A19")
+    if (strcmp(pin,"A19") != 0)
     {
       torch.set_thc_pin(A19);
       printf(Serial, "Setting thc pin to: %s\n", pin);
     }
-    else if (pin == "A20")
+    else if (strcmp(pin,"A20") != 0)
     {
       torch.set_thc_pin(A20);
       printf(Serial, "Setting thc pin to: %s\n", pin);
     }
-    else if (pin == "A21")
+    else if (strcmp(pin,"A21") != 0)
     {
       torch.set_thc_pin(A21);
       printf(Serial, "Setting thc pin to: %s\n", pin);
@@ -274,9 +291,6 @@ void movez()
 }
 void probe_z()
 {
-  callback.pierceHeight = 0.250;
-  callback.pierceDelay = 1.5;
-  callback.cutHeight = 0.250;
   motion.push_sync(&probe_torch_and_finish);
   OkayToSend();
 }
@@ -427,6 +441,7 @@ void gcodes_init()
   sCmd.addCommand("set_scale", set_scale);
   sCmd.addCommand("set_torch", set_torch);
   sCmd.addCommand("set_thc_config", set_thc_config);
+  sCmd.addCommand("set_arc_ok_enable", set_arc_ok_enable);
 
 
   //All Gcode commands below here
@@ -437,6 +452,12 @@ void gcodes_init()
   sCmd.addCommand("set_voltage", set_voltage);
 
   sCmd.setDefaultHandler(unrecognized);
+
+  //Load some default values that will work most of the time
+  callback.pierceHeight = 0.0625;
+  callback.pierceDelay = 1.5;
+  callback.cutHeight = 0.085;
+  callback.clearanceHeight = 2;
 
   PendingOkay = false;
 }
