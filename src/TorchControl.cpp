@@ -75,6 +75,7 @@ void TorchControl::init()
 void TorchControl::cancel()
 {
   run = false;
+  _Feedrate_Timestamp = 0;
   StepsToGo = 0;
 }
 double TorchControl::get_arc_voltage()
@@ -292,6 +293,10 @@ void TorchControl::move_tick()
       }
       _Feedrate_Timestamp = micros();
     }
+  }
+  else
+  {
+    _Feedrate_Timestamp = 0; //If the machine sets with run=true and no movement there's a posibility that micros overflows and resets witch will result in the timer being broken
   }
   interrupts();
 }

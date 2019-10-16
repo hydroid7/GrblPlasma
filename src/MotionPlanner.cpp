@@ -119,8 +119,6 @@ void MotionPlanner::init()
   Motion.pendingFeedhold = false;
   Motion.feedholdActive = false;
 
-  percentage_into_move = 0;
-
   pinMode(X_ENABLE_PIN, OUTPUT);
   pinMode(X_DIR_PIN, OUTPUT);
   pinMode(X_STEP_PIN, OUTPUT);
