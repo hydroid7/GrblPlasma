@@ -122,7 +122,7 @@ void set_torch()
     syncConfig.z_rapid_feed = atof(rapid) / 60;
     syncConfig.z_probe_feed  = atof(probe) / 60;
     syncConfig.floating_head_takeup = atof(takeup);
-    callback.clearanceHeight = atof(takeup);
+    callback.clearanceHeight = atof(clearance);
     printf(Serial, "Setting torch parameters\n\tRapid Feed: %.4f\n\tProbe Feed: %.4f\n\tFloating head takeup: %.4f\n\tClearance Height: %.4f\n", syncConfig.z_rapid_feed, syncConfig.z_probe_feed, syncConfig.floating_head_takeup, callback.clearanceHeight);
   }
   else
