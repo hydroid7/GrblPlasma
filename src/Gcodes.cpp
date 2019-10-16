@@ -216,7 +216,8 @@ void dump_inputs()
   {
     printf(Serial, "Z_PROBE_PIN = LOW\n");
   }
-  
+  printf(Serial, "*************** Analog Pins ******************\n");
+  printf(Serial, "ARC_VOLTAGE_PIN = %lu\n", analogRead(ARC_VOLTAGE_PIN));
 }
 void dump_moves()
 {

@@ -49,7 +49,7 @@ void TorchControl::init()
   pinMode(ARC_START_PIN, OUTPUT); //Arc Start
   pinMode(Z_PROBE_PIN, INPUT); //Z Probe
   pinMode(ARC_VOLTAGE_PIN, INPUT);
-
+  analogReadResolution(16);
   digitalWrite(Z_ENABLE_PIN, HIGH);
 
 
