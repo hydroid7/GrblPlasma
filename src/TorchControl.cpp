@@ -218,6 +218,11 @@ void TorchControl::tick()
         }
       }
     }
+    else
+    {
+      //When we lose our arc ok we need to cancel torch motion
+      torch.cancel();
+    }
   }
   if (run == true) //We have to be running the torch axis in order to check probe condition
   {
