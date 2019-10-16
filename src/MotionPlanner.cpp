@@ -269,28 +269,21 @@ bool MotionPlanner::push_sync(void (*callback)())
   move.waiting_for_sync = false; //This eeds to be toggled true once the callback get called and toggled false once sync_finish is called
   /* Its important that we push a target the same as the last move or it will break the get_last_target_position chain */
   move.target = get_last_moves_target_steps();
-  
   if (MoveStack->isFull(MoveStack))
   {
-    printf(Serial, "(push_sync) ****************************** Stack is full, this should never happen ***************************************\n");
+    //We need to setup a system that will wait for the stack to have space available agian and send an OK
+    printf(Serial, "(push_sync ****************************** Stack is full, this should never happen ***************************************\n");
     return false;
   }
   else
   {
-    if (MoveStack->isEmpty(MoveStack) && Motion.run == false && CurrentMove.waiting_for_sync == false) //If the first move is a sync move and we're not currently waiting on a sync move to finish, don't bother pushing it to the stack, just call it here
+    //noInterrupts();
+    MoveStack->add(MoveStack, &move); //Push the move to the stack!
+    //interrupts();
+    if (Motion.run == false && CurrentMove.waiting_for_sync == false) //If we are not currently in motion and we are not waiting for a sync move to finish, set our feedrate to min feed and start motion
     {
-      if (move.sync_callback != NULL)
-      {
-        move.sync_callback();
-        CurrentMove.waiting_for_sync = true;
-      }
-      move.sync_callback = NULL;
-    }
-    else
-    {
-      noInterrupts();
-      MoveStack->add(MoveStack, &move); //Push the move to the stack!
-      interrupts();
+      motion_set_feedrate(move.entry_velocity);
+      Motion.run = true;
     }
     return true;
   }

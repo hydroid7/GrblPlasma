@@ -24,7 +24,6 @@ end
 function OnInit()
    bigArcs = 1 --stitch arc segments together
    minArcSize = 0.05 --arcs smaller than this are converted to moves
-   post.Text ("\nset_voltage 30\n") -- Turn on Torch Height Control and Set voltage to 80 volts
 end
 
 function OnNewLine()
