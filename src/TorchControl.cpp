@@ -145,7 +145,6 @@ void TorchControl::wait_until(unsigned long timestamp, void (*callback)())
 }
 void TorchControl::move_z_incremental(double distance, double feedrate, bool (*condition)(), void (*met)())
 {
-  run = false; //If we are already moving, stop the move!
   ConditionCallback = condition;
   ConditionMetCallback = met;
   _Feedrate_delay = cycle_frequency_from_feedrate(feedrate);
@@ -205,17 +204,17 @@ void TorchControl::tick()
     {
       if (IsInTolerance(thc.arc_voltage, thc.set_voltage, thc.voltage_tolorance)) //Check to see if we are in tolorance
       {
-        torch.cancel(); //Cancel our torch movement
+        cancel(); //Cancel our torch movement
       }
       else
       {
         if (thc.set_voltage > thc.arc_voltage) //Jog Z positive
         {
-          torch.move_z_incremental(1, thc.comp_velocity, NULL, NULL);
+          move_z_incremental(1, thc.comp_velocity, NULL, NULL);
         }
         else //Jog Z Negative
         {
-          torch.move_z_incremental(-1, thc.comp_velocity, NULL, NULL);
+          move_z_incremental(-1, thc.comp_velocity, NULL, NULL);
         }
       }
     }
