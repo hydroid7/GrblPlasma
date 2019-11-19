@@ -3,7 +3,7 @@ CNC Motion Control Firmware for XmotionCNC Motion Control Boards
 
 # Hardware
 Has been design to run on my Xmotion CNC Plasma Machines custom designed circuit board. If you wan't to use the firmware on
-your DIY machine. Get yourself a Teensy 3.6 and a throw together a breakout board. See src/Machine.h for pin definitions.
+your DIY machine. Get yourself a Teensy 3.6 (Or port to virtually any other platform you would like) and a throw together a breakout board. See src/Machine.h for pin definitions.
 
 # Firmware
 I've designed this to be very portable. Uses the arduino wiring framework and platform io. For CNC plasma use 
