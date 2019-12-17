@@ -456,34 +456,21 @@ void report_echo_line_received(char *line)
   printPgmString(PSTR("[echo: ")); printString(line);
   report_util_feedback_line_feed();
 }
-
-uint16_t adc_read(uint8_t adcx) {
-	/* adcx is the analog pin we want to use.  ADMUX's first few bits are
-	 * the binary representations of the numbers of the pins so we can
-	 * just 'OR' the pin's number with ADMUX to select that pin.
-	 * We first zero the four bits by setting ADMUX equal to its higher
-	 * four bits. */
-	ADMUX	&=	0xf0;
-	ADMUX	|=	adcx;
-
-	/* This starts the conversion. */
-	ADCSRA |= _BV(ADSC);
-
-	/* This is an idle loop that just wait around until the conversion
-	 * is finished.  It constantly checks ADCSRA's ADSC bit, which we just
-	 * set above, to see if it is still set.  This bit is automatically
-	 * reset (zeroed) when the conversion is ready so if we do this in
-	 * a loop the loop will just go until the conversion is ready. */
-	while ( (ADCSRA & _BV(ADSC)) );
-
-	/* Finally, we return the converted value to the calling function. */
-	return ADC;
-}
  // Prints real-time data. This function grabs a real-time snapshot of the stepper subprogram
  // and the actual location of the CNC machine. Users may change the following function to their
  // specific needs, but the desired real-time data report must be as short as possible. This is
  // requires as it minimizes the computational overhead and allows grbl to keep running smoothly,
  // especially during g-code programs with fast, short line segments and high frequency reports (5-20Hz).
+ uint16_t ReadADC(uint8_t ADCchannel)
+{
+ //select ADC channel with safety mask
+ ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
+ //single conversion mode
+ ADCSRA |= (1<<ADSC);
+ // wait until ADC conversion is complete
+ while( ADCSRA & (1<<ADSC) );
+ return ADC;
+}
 void report_realtime_status()
 {
   int32_t current_position[N_AXIS]; // Copy current state of the system position variable
@@ -506,7 +493,7 @@ void report_realtime_status()
   printPgmString(PSTR(" }, \"FEED\": "));
   printFloat_RateValue(st_get_realtime_rate());
   printPgmString(PSTR(", \"ADC\": "));
-  print_uint8_base10(adc_read(0));
+  print_uint32_base10((uint16_t)ReadADC(0));
   printPgmString(PSTR(" } "));
   report_util_line_feed();
 }

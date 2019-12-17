@@ -63,6 +63,8 @@
 
 // ---------------------------------------------------------------------------------------
 // COMPILE-TIME ERROR CHECKING OF DEFINE VALUES:
+extern volatile bool jog_z_up;
+extern volatile bool jog_z_down;
 
 #ifndef HOMING_CYCLE_0
   #error "Required HOMING_CYCLE_0 not defined."

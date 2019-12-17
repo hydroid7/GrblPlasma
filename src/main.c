@@ -35,15 +35,86 @@ volatile uint8_t sys_rt_exec_accessory_override; // Global realtime executor bit
   volatile uint8_t sys_rt_exec_debug;
 #endif
 
+volatile unsigned long micros;
+volatile unsigned long millis;
+unsigned long millis_timer;
+
+unsigned long test_timer;
+
+//Fires every 1/8 of a ms, 125uS
+ISR(TIMER2_OVF_vect){
+  if (jog_z_up)
+  {
+    //Dir
+    PORTC &= ~(1 << PC1);    // set pin A2 low
+
+    //Step
+    PORTC |= (1 << PC2);     // set pin A2 high
+    _delay_us(10);
+    PORTC &= ~(1 << PC2);    // set pin A2 low
+  }
+  if (jog_z_down)
+  {
+    //Dir
+    PORTC |= (1 << PC1);     // set pin A2 low
+
+    //Step
+    PORTC |= (1 << PC2);     // set pin A2 high
+    _delay_us(10);
+    PORTC &= ~(1 << PC2);    // set pin A2 low
+  }
+  if ((millis - test_timer) > 10 * 1000)
+  {
+    printPgmString(PSTR("Ten seconds!\n"));
+    test_timer = millis;
+  }
+
+  //Timing critical
+  if (millis_timer > 7) //Four cycles is one millisecond
+  {
+    millis_timer = 0;
+    millis++;
+  }
+  TCNT2 = 223;           //Reset Timer to 130 out of 255
+  TIFR2 = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
+  micros += 125;
+  millis_timer++;
+}
+
+
 int main(void)
 {
-  /* Enable the ADC */
-	ADCSRA |= _BV(ADEN);
+    // Select Vref=AVcc
+  ADMUX |= (1<<REFS0);
+  //set prescaller to 128 and enable ADC 
+  ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);    
+
+  //Works! About 16ms
+  //TIMSK2 = (TIMSK2 & 0b11111110) | 0x01;
+  //TCCR2B = (TCCR2B & 0b11111000) | 0x07;
+
+  //Setup Timer2 to fire every 1ms
+  TCCR2B = 0x00;        //Disbale Timer2 while we set it up
+  TCNT2  = 130;         //Reset Timer Count to 130 out of 255
+  TIFR2  = 0x00;        //Timer2 INT Flag Reg: Clear Timer Overflow Flag
+  TIMSK2 = 0x01;        //Timer2 INT Reg: Timer2 Overflow Interrupt Enable
+  TCCR2A = 0x00;        //Timer2 Control Reg A: Wave Gen Mode normal
+  TCCR2B = 0x05;        //Timer2 Control Reg B: Timer Prescaler set to 128
+  micros = 0;
+  millis = 0;
+  millis_timer = 0;
+
+  test_timer = 0;
+
+  DDRC |= (1 << DDC2); //Set A2 as output
+  DDRC |= (1 << DDC1); //Set A1 as output
   // Initialize system upon power-up.
   serial_init();   // Setup serial baud rate and interrupts
   settings_init(); // Load Grbl settings from EEPROM
   stepper_init();  // Configure stepper pins and interrupt timers
   system_init();   // Configure pinout pins and pin-change interrupt
+
+
 
   memset(sys_position,0,sizeof(sys_position)); // Clear machine position.
   sei(); // Enable interrupts
