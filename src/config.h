@@ -55,9 +55,6 @@
 #define CMD_Z_RUN_NEGATIVE '<'
 #define CMD_Z_RUN_POSITIVE '>'
 #define CMD_Z_RUN_CANCEL '^'
-#define CMD_Z_PROBE '&'
-#define CMD_FIRE_TORCH '#'
-#define CMD_EXSTINGUISH_TORCH '$'
 
 // NOTE: All override realtime commands must be in the extended ASCII character set, starting
 // at character value 128 (0x80) and up to 255 (0xFF). If the normal set of realtime commands,
@@ -307,7 +304,7 @@
 // frequencies below 10kHz, where the aliasing between axes of multi-axis motions can cause audible
 // noise and shake your machine. At even lower step frequencies, AMASS adapts and provides even better
 // step smoothing. See stepper.c for more details on the AMASS system works.
-//#define ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING  // Default enabled. Comment to disable.
+#define ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING  // Default enabled. Comment to disable.
 
 // Sets the maximum step rate allowed to be written as a Grbl setting. This option enables an error
 // check in the settings module to prevent settings values that will exceed this limitation. The maximum

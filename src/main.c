@@ -41,8 +41,6 @@ unsigned long millis_timer;
 unsigned long z_step_timer;
 volatile int z_step_delay;
 
-z_increment_t z_inc;
-
 unsigned long cycle_frequency_from_feedrate(double feedrate)
 {
   return ((1000.0f * 1000.0f) / (2540.0f)) / feedrate;
@@ -52,85 +50,31 @@ ISR(TIMER2_OVF_vect){
   
   if ((micros - z_step_timer) > z_step_delay)
   {
-    if (PINC & (1<<PC5)) //A5 is high
-    {
-      //printPgmString(PSTR("HIGH\n"));
-    }
-    else //A5 is low
-    {
-      //printPgmString(PSTR("LOW\n"));
-      jog_z_up = false;
-      jog_z_down = false;
-      z_inc.is_set = true;
-      z_inc.steps = (2540.0f * (0.130 + 0.150));
-      z_inc.report_finish = true;
-    }
     if (jog_z_up)
     {
       //Dir
-      PORTC &= ~(1 << PC1);    // set pin A2 low
+      PORTD &= ~(1 << PD7);    // set pin 7 low
 
       //Step
-      PORTC |= (1 << PC2);     // set pin A2 high
+      PORTD |= (1 << PD4);     // set pin A2 high
       _delay_us(10);
-      PORTC &= ~(1 << PC2);    // set pin A2 low
+      PORTD &= ~(1 << PD4);    // set pin A2 low
     }
     else if (jog_z_down)
     {
       //Dir
-      PORTC |= (1 << PC1);     // set pin A2 low
+      PORTD |= (1 << PD7);     // set pin A2 low
 
       //Step
-      PORTC |= (1 << PC2);     // set pin A2 high
+      PORTD |= (1 << PD4);     // set pin A2 high
       _delay_us(10);
-      PORTC &= ~(1 << PC2);    // set pin A2 low
+      PORTD &= ~(1 << PD4);    // set pin A2 low
     }
-    else if (z_inc.is_set)
-    {
-      if (z_inc.steps > 0)
-      {
-        PORTC &= ~(1 << PC1);    // set pin A2 low
-
-        PORTC |= (1 << PC2);     // set pin A2 high
-        _delay_us(10);
-        PORTC &= ~(1 << PC2);    // set pin A2 low
-        z_inc.steps--;
-        if (z_inc.steps == 0)
-        {
-          z_inc.is_set = false;
-          if (z_inc.report_finish == true)
-          {
-            printPgmString(PSTR("Z_MOVE_FINISHED\n"));
-            z_inc.report_finish = false;
-          }
-        }
-      }
-      else
-      {
-        PORTC |= (1 << PC1);     // set pin A2 High
-
-        PORTC |= (1 << PC2);     // set pin A2 high
-        _delay_us(10);
-        PORTC &= ~(1 << PC2);    // set pin A2 low
-        z_inc.steps++;
-        if (z_inc.steps == 0)
-        {
-          z_inc.is_set = false;
-          if (z_inc.report_finish == true)
-          {
-            printPgmString(PSTR("Z_MOVE_FINISHED\n"));
-            z_inc.report_finish = false;
-          }
-        }
-      }
-      
-    }
-    
     z_step_timer = micros;
   }
 
   //Timing critical
-  if (millis_timer > 7) //Four cycles is one millisecond
+  if (millis_timer > 7) //8 cycles is one millisecond
   {
     millis_timer = 0;
     millis++;
@@ -144,7 +88,7 @@ ISR(TIMER2_OVF_vect){
 
 int main(void)
 {
-    // Select Vref=AVcc
+  // Select Vref=AVcc
   ADMUX |= (1<<REFS0);
   //set prescaller to 128 and enable ADC 
   ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);   
@@ -161,14 +105,12 @@ int main(void)
   millis_timer = 0;
 
   z_step_timer = 0;
-  z_step_delay = cycle_frequency_from_feedrate((50.0f / 60.0f));
-  z_inc.is_set = false;
-  z_inc.steps = 0;
+  z_step_delay = cycle_frequency_from_feedrate((20.0f / 60.0f));
 
-  DDRC |= (1 << DDC2); //Set A2 as output for Z_STEP
-  DDRC |= (1 << DDC1); //Set A1 as output for Z_DIR
-  DDRC &= ~(1<<DDC5); // Set A5 as input for Probe
-  PORTC |= (1<<PC5);  // Set A5 internally pulled-up
+  //DDRC |= (1 << DDC2); //Set A2 as output for Z_STEP
+  //DDRC |= (1 << DDC1); //Set A1 as output for Z_DIR
+  //DDRC &= ~(1<<DDC5); // Set A5 as input for Probe
+  //PORTC |= (1<<PC5);  // Set A5 internally pulled-up
 
   // Initialize system upon power-up.
   serial_init();   // Setup serial baud rate and interrupts

@@ -61,17 +61,10 @@
 #include "stepper.h"
 #include "jog.h"
 
-typedef struct z_increment_t{
-  bool is_set;
-  long steps;
-  bool report_finish;
-}z_increment_t;
-
 // ---------------------------------------------------------------------------------------
 // COMPILE-TIME ERROR CHECKING OF DEFINE VALUES:
 extern volatile bool jog_z_up;
 extern volatile bool jog_z_down;
-extern z_increment_t z_inc;
 
 #define bit_get(p,m) ((p) & (m))
 #define bit_set(p,m) ((p) |= (m))

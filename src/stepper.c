@@ -249,6 +249,7 @@ void st_wake_up()
 // Stepper shutdown
 void st_go_idle()
 {
+  printPgmString(PSTR("HALT\n"));
   // Disable Stepper Driver Interrupt. Allow Stepper Port Reset Interrupt to finish, if active.
   TIMSK1 &= ~(1<<OCIE1A); // Disable Timer1 interrupt
   TCCR1B = (TCCR1B & ~((1<<CS12) | (1<<CS11))) | (1<<CS10); // Reset clock to no prescaling.
@@ -567,7 +568,7 @@ void stepper_init()
 {
   // Configure step and direction interface pins
   STEP_DDR |= STEP_MASK;
-  STEPPERS_DISABLE_DDR |= 1<<STEPPERS_DISABLE_BIT;
+  //STEPPERS_DISABLE_DDR |= 1<<STEPPERS_DISABLE_BIT;
   DIRECTION_DDR |= DIRECTION_MASK;
   
   #ifdef ENABLE_DUAL_AXIS
