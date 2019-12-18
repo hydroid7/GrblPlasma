@@ -161,6 +161,12 @@ ISR(SERIAL_RX)
       jog_z_up = false; 
       break;
     };
+    case CMD_Z_PROBE: {
+      z_inc.is_set = true;
+      z_inc.steps = (2540.0f * (5)) * -1;
+    };
+    case CMD_FIRE_TORCH: PORTB |= (1 << PB0); break;
+    case CMD_EXSTINGUISH_TORCH: PORTB &= ~(1 << PB0); break;
     default :
       if (data > 0x7F) { // Real-time control characters are extended ACSII only.
         switch(data) {

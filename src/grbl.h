@@ -61,10 +61,25 @@
 #include "stepper.h"
 #include "jog.h"
 
+typedef struct z_increment_t{
+  bool is_set;
+  long steps;
+  bool report_finish;
+}z_increment_t;
+
 // ---------------------------------------------------------------------------------------
 // COMPILE-TIME ERROR CHECKING OF DEFINE VALUES:
 extern volatile bool jog_z_up;
 extern volatile bool jog_z_down;
+extern z_increment_t z_inc;
+
+#define bit_get(p,m) ((p) & (m))
+#define bit_set(p,m) ((p) |= (m))
+#define bit_clear(p,m) ((p) &= ~(m))
+#define bit_flip(p,m) ((p) ^= (m))
+#define bit_write(c,p,m) (c ? bit_set(p,m) : bit_clear(p,m))
+#define BIT(x) (0x01 << (x))
+#define LONGBIT(x) ((unsigned long)0x00000001 << (x))
 
 #ifndef HOMING_CYCLE_0
   #error "Required HOMING_CYCLE_0 not defined."

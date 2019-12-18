@@ -34,39 +34,99 @@ volatile uint8_t sys_rt_exec_accessory_override; // Global realtime executor bit
 #ifdef DEBUG
   volatile uint8_t sys_rt_exec_debug;
 #endif
-
 volatile unsigned long micros;
 volatile unsigned long millis;
 unsigned long millis_timer;
 
-unsigned long test_timer;
+unsigned long z_step_timer;
+volatile int z_step_delay;
 
+z_increment_t z_inc;
+
+unsigned long cycle_frequency_from_feedrate(double feedrate)
+{
+  return ((1000.0f * 1000.0f) / (2540.0f)) / feedrate;
+}
 //Fires every 1/8 of a ms, 125uS
 ISR(TIMER2_OVF_vect){
-  if (jog_z_up)
+  
+  if ((micros - z_step_timer) > z_step_delay)
   {
-    //Dir
-    PORTC &= ~(1 << PC1);    // set pin A2 low
+    if (PINC & (1<<PC5)) //A5 is high
+    {
+      //printPgmString(PSTR("HIGH\n"));
+    }
+    else //A5 is low
+    {
+      //printPgmString(PSTR("LOW\n"));
+      jog_z_up = false;
+      jog_z_down = false;
+      z_inc.is_set = true;
+      z_inc.steps = (2540.0f * (0.130 + 0.150));
+      z_inc.report_finish = true;
+    }
+    if (jog_z_up)
+    {
+      //Dir
+      PORTC &= ~(1 << PC1);    // set pin A2 low
 
-    //Step
-    PORTC |= (1 << PC2);     // set pin A2 high
-    _delay_us(10);
-    PORTC &= ~(1 << PC2);    // set pin A2 low
-  }
-  if (jog_z_down)
-  {
-    //Dir
-    PORTC |= (1 << PC1);     // set pin A2 low
+      //Step
+      PORTC |= (1 << PC2);     // set pin A2 high
+      _delay_us(10);
+      PORTC &= ~(1 << PC2);    // set pin A2 low
+    }
+    else if (jog_z_down)
+    {
+      //Dir
+      PORTC |= (1 << PC1);     // set pin A2 low
 
-    //Step
-    PORTC |= (1 << PC2);     // set pin A2 high
-    _delay_us(10);
-    PORTC &= ~(1 << PC2);    // set pin A2 low
-  }
-  if ((millis - test_timer) > 10 * 1000)
-  {
-    printPgmString(PSTR("Ten seconds!\n"));
-    test_timer = millis;
+      //Step
+      PORTC |= (1 << PC2);     // set pin A2 high
+      _delay_us(10);
+      PORTC &= ~(1 << PC2);    // set pin A2 low
+    }
+    else if (z_inc.is_set)
+    {
+      if (z_inc.steps > 0)
+      {
+        PORTC &= ~(1 << PC1);    // set pin A2 low
+
+        PORTC |= (1 << PC2);     // set pin A2 high
+        _delay_us(10);
+        PORTC &= ~(1 << PC2);    // set pin A2 low
+        z_inc.steps--;
+        if (z_inc.steps == 0)
+        {
+          z_inc.is_set = false;
+          if (z_inc.report_finish == true)
+          {
+            printPgmString(PSTR("Z_MOVE_FINISHED\n"));
+            z_inc.report_finish = false;
+          }
+        }
+      }
+      else
+      {
+        PORTC |= (1 << PC1);     // set pin A2 High
+
+        PORTC |= (1 << PC2);     // set pin A2 high
+        _delay_us(10);
+        PORTC &= ~(1 << PC2);    // set pin A2 low
+        z_inc.steps++;
+        if (z_inc.steps == 0)
+        {
+          z_inc.is_set = false;
+          if (z_inc.report_finish == true)
+          {
+            printPgmString(PSTR("Z_MOVE_FINISHED\n"));
+            z_inc.report_finish = false;
+          }
+        }
+      }
+      
+    }
+    
+    z_step_timer = micros;
   }
 
   //Timing critical
@@ -87,11 +147,7 @@ int main(void)
     // Select Vref=AVcc
   ADMUX |= (1<<REFS0);
   //set prescaller to 128 and enable ADC 
-  ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);    
-
-  //Works! About 16ms
-  //TIMSK2 = (TIMSK2 & 0b11111110) | 0x01;
-  //TCCR2B = (TCCR2B & 0b11111000) | 0x07;
+  ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);   
 
   //Setup Timer2 to fire every 1ms
   TCCR2B = 0x00;        //Disbale Timer2 while we set it up
@@ -104,10 +160,16 @@ int main(void)
   millis = 0;
   millis_timer = 0;
 
-  test_timer = 0;
+  z_step_timer = 0;
+  z_step_delay = cycle_frequency_from_feedrate((50.0f / 60.0f));
+  z_inc.is_set = false;
+  z_inc.steps = 0;
 
-  DDRC |= (1 << DDC2); //Set A2 as output
-  DDRC |= (1 << DDC1); //Set A1 as output
+  DDRC |= (1 << DDC2); //Set A2 as output for Z_STEP
+  DDRC |= (1 << DDC1); //Set A1 as output for Z_DIR
+  DDRC &= ~(1<<DDC5); // Set A5 as input for Probe
+  PORTC |= (1<<PC5);  // Set A5 internally pulled-up
+
   // Initialize system upon power-up.
   serial_init();   // Setup serial baud rate and interrupts
   settings_init(); // Load Grbl settings from EEPROM
@@ -174,6 +236,8 @@ int main(void)
     report_init_message();
 
     // Start Grbl main loop. Processes program inputs and executes them.
+    
+    PORTB &= ~(1 << PB0); //Set torch pin off
     protocol_main_loop();
 
   }
