@@ -490,6 +490,23 @@ void report_realtime_status()
   printFloat_CoordValue(print_position[0]);
   printPgmString(PSTR(",\"y\": "));
   printFloat_CoordValue(print_position[1]);
+  printPgmString(PSTR(",\"z\": "));
+  printFloat_CoordValue(print_position[2]);
+
+  float wco[N_AXIS];
+  for (uint8_t idx=0; idx< N_AXIS; idx++) {
+      // Apply work coordinate offsets and tool length offset to current position.
+      wco[idx] = gc_state.coord_system[idx]+gc_state.coord_offset[idx];
+      if (idx == TOOL_LENGTH_OFFSET_AXIS) { wco[idx] += gc_state.tool_length_offset; }
+      print_position[idx] -= wco[idx];
+    }
+  printPgmString(PSTR(" }, \"WCS\": { \"x\": "));
+  printFloat_CoordValue(print_position[0]);
+  printPgmString(PSTR(",\"y\": "));
+  printFloat_CoordValue(print_position[1]);
+  printPgmString(PSTR(",\"z\": "));
+  printFloat_CoordValue(print_position[2]);
+
   printPgmString(PSTR(" }, \"FEED\": "));
   printFloat_RateValue(st_get_realtime_rate());
   printPgmString(PSTR(", \"ADC\": "));
