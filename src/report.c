@@ -28,6 +28,7 @@
 
 #include "grbl.h"
 
+volatile bool machine_in_motion;
 
 // Internal report utilities to reduce flash with repetitive tasks turned into functions.
 void report_util_setting_prefix(uint8_t n) { serial_write('$'); print_uint8_base10(n); serial_write('='); }
@@ -511,7 +512,16 @@ void report_realtime_status()
   printFloat_RateValue(st_get_realtime_rate());
   printPgmString(PSTR(", \"ADC\": "));
   print_uint32_base10((uint16_t)ReadADC(0));
-  printPgmString(PSTR(" } "));
+  printPgmString(PSTR(" }, \"IN_MOTION\": "));
+  if (machine_in_motion == true)
+  {
+    printPgmString(PSTR("true"));
+  }
+  else
+  {
+    printPgmString(PSTR("false"));
+  }
+  printPgmString(PSTR(" }"));
   report_util_line_feed();
 }
 void report_realtime_status_orig()

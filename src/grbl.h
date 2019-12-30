@@ -65,6 +65,7 @@
 // COMPILE-TIME ERROR CHECKING OF DEFINE VALUES:
 extern volatile bool jog_z_up;
 extern volatile bool jog_z_down;
+extern volatile bool machine_in_motion;
 
 #define bit_get(p,m) ((p) & (m))
 #define bit_set(p,m) ((p) |= (m))

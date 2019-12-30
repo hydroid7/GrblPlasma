@@ -223,6 +223,7 @@ static st_prep_t prep;
 // enabled. Startup init and limits call this function but shouldn't start the cycle.
 void st_wake_up()
 {
+  machine_in_motion = true;
   // Enable stepper drivers.
   //if (bit_istrue(settings.flags,BITFLAG_INVERT_ST_ENABLE)) { STEPPERS_DISABLE_PORT |= (1<<STEPPERS_DISABLE_BIT); }
   //else { STEPPERS_DISABLE_PORT &= ~(1<<STEPPERS_DISABLE_BIT); }
@@ -249,7 +250,7 @@ void st_wake_up()
 // Stepper shutdown
 void st_go_idle()
 {
-  //printPgmString(PSTR("HALT\n"));
+  machine_in_motion = false;
   // Disable Stepper Driver Interrupt. Allow Stepper Port Reset Interrupt to finish, if active.
   TIMSK1 &= ~(1<<OCIE1A); // Disable Timer1 interrupt
   TCCR1B = (TCCR1B & ~((1<<CS12) | (1<<CS11))) | (1<<CS10); // Reset clock to no prescaling.
