@@ -521,6 +521,15 @@ void report_realtime_status()
   {
     printPgmString(PSTR("false"));
   }
+  printPgmString(PSTR(", \"ARC_OK\": "));
+  if(PINC & (1<<PC1))
+  {
+    printPgmString(PSTR("true"));
+  }
+  else
+  {
+    printPgmString(PSTR("false"));
+  }
   printPgmString(PSTR(" }"));
   report_util_line_feed();
 }

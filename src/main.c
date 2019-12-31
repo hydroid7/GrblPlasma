@@ -107,10 +107,9 @@ int main(void)
   z_step_timer = 0;
   z_step_delay = cycle_frequency_from_feedrate((20.0f / 60.0f));
 
-  //DDRC |= (1 << DDC2); //Set A2 as output for Z_STEP
-  //DDRC |= (1 << DDC1); //Set A1 as output for Z_DIR
-  //DDRC &= ~(1<<DDC5); // Set A5 as input for Probe
-  //PORTC |= (1<<PC5);  // Set A5 internally pulled-up
+  
+  DDRC &= ~(1<<DDC1); // Set A1 as input for Arc Ok
+  PORTC |= (1<<PC1);  // Set A1 internally pulled-up
 
   // Initialize system upon power-up.
   serial_init();   // Setup serial baud rate and interrupts
