@@ -105,7 +105,7 @@ int main(void)
   millis_timer = 0;
 
   z_step_timer = 0;
-  z_step_delay = cycle_frequency_from_feedrate((20.0f / 60.0f));
+  z_step_delay = cycle_frequency_from_feedrate((7.0f / 60.0f));
 
   
   DDRC &= ~(1<<DDC1); // Set A1 as input for Arc Ok
