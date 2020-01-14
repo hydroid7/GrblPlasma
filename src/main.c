@@ -53,8 +53,16 @@ ISR(TIMER2_OVF_vect){
     if (jog_z_up)
     {
       //Dir
-      PORTD &= ~(1 << PD7);    // set pin 7 low
-
+      if (settings.dir_invert_mask & (1 << 2)) //Z dir is inverted
+      {
+        PORTD &= ~(1 << PD7);    // set pin 7 low
+      }
+      else
+      {
+        PORTD |= (1 << PD7);    // set pin A2 high
+      }
+      
+      
       //Step
       PORTD |= (1 << PD4);     // set pin A2 high
       _delay_us(10);
@@ -62,9 +70,16 @@ ISR(TIMER2_OVF_vect){
     }
     else if (jog_z_down)
     {
-      //Dir
-      PORTD |= (1 << PD7);     // set pin A2 low
-
+      if (settings.dir_invert_mask & (1 << 2)) //Z dir is inverted
+      {
+        //Dir
+        PORTD |= (1 << PD7);     // set pin A2 high
+      }
+      else
+      {
+        PORTD &= ~(1 << PD7);    // set pin 7 low
+      }
+      
       //Step
       PORTD |= (1 << PD4);     // set pin A2 high
       _delay_us(10);
