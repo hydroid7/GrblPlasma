@@ -56,10 +56,10 @@ uint16_t ReadADC(uint8_t ADCchannel)
  return ADC;
 }
 #define numReadings 100
-int readings[numReadings];      // the readings from the analog input
-int readIndex = 0;              // the index of the current reading
-int total = 0;                  // the running total
-volatile int average = 0;                // the average
+uint16_t readings[numReadings];      // the readings from the analog input
+uint16_t readIndex = 0;              // the index of the current reading
+uint16_t total = 0;                  // the running total
+volatile uint16_t average = 0;                // the average
 void UpdateCurrentArcVoltage()
 {
   total = total - readings[readIndex];
