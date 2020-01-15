@@ -462,16 +462,7 @@ void report_echo_line_received(char *line)
  // specific needs, but the desired real-time data report must be as short as possible. This is
  // requires as it minimizes the computational overhead and allows grbl to keep running smoothly,
  // especially during g-code programs with fast, short line segments and high frequency reports (5-20Hz).
- uint16_t ReadADC(uint8_t ADCchannel)
-{
- //select ADC channel with safety mask
- ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
- //single conversion mode
- ADCSRA |= (1<<ADSC);
- // wait until ADC conversion is complete
- while( ADCSRA & (1<<ADSC) );
- return ADC;
-}
+
 void report_realtime_status()
 {
   int32_t current_position[N_AXIS]; // Copy current state of the system position variable
@@ -511,7 +502,7 @@ void report_realtime_status()
   printPgmString(PSTR(" }, \"FEED\": "));
   printFloat_RateValue(st_get_realtime_rate());
   printPgmString(PSTR(", \"ADC\": "));
-  print_uint32_base10((uint16_t)ReadADC(0));
+  print_uint32_base10((uint16_t)average);
   printPgmString(PSTR(", \"IN_MOTION\": "));
   if (machine_in_motion == true)
   {

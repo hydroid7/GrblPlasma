@@ -45,6 +45,32 @@ unsigned long cycle_frequency_from_feedrate(double feedrate)
 {
   return ((1000.0f * 1000.0f) / (2540.0f)) / feedrate;
 }
+uint16_t ReadADC(uint8_t ADCchannel)
+{
+ //select ADC channel with safety mask
+ ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
+ //single conversion mode
+ ADCSRA |= (1<<ADSC);
+ // wait until ADC conversion is complete
+ while( ADCSRA & (1<<ADSC) );
+ return ADC;
+}
+#define numReadings 100
+int readings[numReadings];      // the readings from the analog input
+int readIndex = 0;              // the index of the current reading
+int total = 0;                  // the running total
+volatile int average = 0;                // the average
+void UpdateCurrentArcVoltage()
+{
+  total = total - readings[readIndex];
+  readings[readIndex] = ReadADC(0);
+  total = total + readings[readIndex];
+  readIndex = readIndex + 1;
+  if (readIndex >= numReadings) {
+    readIndex = 0;
+  }
+  average = total / numReadings;
+}
 //Fires every 1/8 of a ms, 125uS
 ISR(TIMER2_OVF_vect){
   
@@ -91,6 +117,7 @@ ISR(TIMER2_OVF_vect){
   //Timing critical
   if (millis_timer > 7) //8 cycles is one millisecond
   {
+    UpdateCurrentArcVoltage();
     millis_timer = 0;
     millis++;
   }
@@ -103,6 +130,9 @@ ISR(TIMER2_OVF_vect){
 
 int main(void)
 {
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    readings[thisReading] = 0;
+  }
   // Select Vref=AVcc
   ADMUX |= (1<<REFS0);
   //set prescaller to 128 and enable ADC 
