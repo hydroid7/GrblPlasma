@@ -45,37 +45,8 @@ unsigned long cycle_frequency_from_feedrate(double feedrate)
 {
   return ((1000.0f * 1000.0f) / (2540.0f)) / feedrate;
 }
-uint16_t ReadADC(uint8_t ADCchannel)
-{
- //select ADC channel with safety mask
- ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
- //single conversion mode
- ADCSRA |= (1<<ADSC);
- // wait until ADC conversion is complete
- while( ADCSRA & (1<<ADSC) );
- return ADC;
-}
-#define numReadings 40
-uint16_t readings[numReadings];      // the readings from the analog input
-uint16_t readIndex = 0;              // the index of the current reading
-uint64_t total = 0;                  // the running total
-volatile uint16_t average = 0;                // the average
-void UpdateCurrentArcVoltage()
-{
-  total = total - readings[readIndex];
-  readings[readIndex] = ReadADC(0);
-  total = total + readings[readIndex];
-  readIndex = readIndex + 1;
-  if (readIndex >= numReadings) {
-    readIndex = 0;
-  }
-  average = total / numReadings;
-
-  //average = ReadADC(0);
-}
 //Fires every 1/8 of a ms, 125uS
 ISR(TIMER2_OVF_vect){
-  
   if ((micros - z_step_timer) > z_step_delay)
   {
     if (jog_z_up)
@@ -119,7 +90,6 @@ ISR(TIMER2_OVF_vect){
   //Timing critical
   if (millis_timer > 7) //8 cycles is one millisecond
   {
-    UpdateCurrentArcVoltage();
     millis_timer = 0;
     millis++;
   }
@@ -132,9 +102,6 @@ ISR(TIMER2_OVF_vect){
 
 int main(void)
 {
-  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-    readings[thisReading] = 0;
-  }
   // Select Vref=AVcc
   ADMUX |= (1<<REFS0);
   //set prescaller to 128 and enable ADC 
@@ -152,11 +119,15 @@ int main(void)
   millis_timer = 0;
 
   z_step_timer = 0;
-  z_step_delay = cycle_frequency_from_feedrate((7.0f / 60.0f));
+  z_step_delay = cycle_frequency_from_feedrate((4.0f / 60.0f));
 
   
   DDRC &= ~(1<<DDC1); // Set A1 as input for Arc Ok
   PORTC |= (1<<PC1);  // Set A1 internally pulled-up
+
+  //Start first ADC conversion
+  ADMUX = (ADMUX & 0xF0) | (0 & 0x0F);
+  ADCSRA |= (1<<ADSC);
 
   // Initialize system upon power-up.
   serial_init();   // Setup serial baud rate and interrupts

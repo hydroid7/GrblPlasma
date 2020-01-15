@@ -66,7 +66,9 @@
 extern volatile bool jog_z_up;
 extern volatile bool jog_z_down;
 extern volatile bool machine_in_motion;
-extern volatile uint16_t average;
+extern uint16_t average;
+extern volatile unsigned long micros;
+extern volatile unsigned long millis;
 
 #define bit_get(p,m) ((p) & (m))
 #define bit_set(p,m) ((p) |= (m))
