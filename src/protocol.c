@@ -43,22 +43,6 @@ uint16_t ReadADC(uint8_t ADCchannel)
  while( ADCSRA & (1<<ADSC) );
  return ADC;
 }
-#define numReadings 5
-uint16_t readings[numReadings];      // the readings from the analog input
-uint16_t readIndex = 0;              // the index of the current reading
-uint64_t total = 0;                  // the running total
-uint16_t average = 0;                // the average
-void UpdateCurrentArcVoltage()
-{
-  total = total - readings[readIndex];
-  readings[readIndex] = ReadADC(0);
-  total = total + readings[readIndex];
-  readIndex = readIndex + 1;
-  if (readIndex >= numReadings) {
-    readIndex = 0;
-  }
-  average = total / numReadings;
-}
 
 /*
   GRBL PRIMARY LOOP:
@@ -95,10 +79,6 @@ void protocol_main_loop()
   // Primary loop! Upon a system abort, this exits back to main() to reset the system.
   // This is also where Grbl idles while waiting for something to do.
   // ---------------------------------------------------------------------------------
-  arc_voltage_sample_timer = 0;
-  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-    readings[thisReading] = 0;
-  }
   uint8_t line_flags = 0;
   uint8_t char_counter = 0;
   uint8_t c;
@@ -187,11 +167,6 @@ void protocol_main_loop()
     protocol_auto_cycle_start();
 
     protocol_execute_realtime();  // Runtime command check point.
-    if ((millis - arc_voltage_sample_timer) > 10)
-    {
-      UpdateCurrentArcVoltage();
-      arc_voltage_sample_timer = millis;
-    }
     if (sys.abort) { return; } // Bail to main() program loop to reset system.
   }
 

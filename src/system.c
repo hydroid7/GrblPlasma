@@ -217,6 +217,24 @@ uint8_t system_execute_line(char *line)
           #endif
           }
           break;
+        case 'T':
+          //printPgmString(PSTR("THC control!\n"));
+          if (line[2] == '=')
+          {
+            char v[5];
+            uint8_t vi = 0;
+            for (uint8_t i = 3; i < (3 + 5); i++)
+            {
+              if (line[i] == '\r' || line[i] == '\n') break;
+              v[vi] = line[i];
+              vi++;
+            }
+            analogSetVal = atoi(v);
+            //printPgmString(PSTR("Voltage = "));
+            //print_uint32_base10((uint16_t)analogSetVal);
+            //printPgmString(PSTR("\r\n"));
+          }
+        break;
         case 'R' : // Restore defaults [IDLE/ALARM]
           if ((line[2] != 'S') || (line[3] != 'T') || (line[4] != '=') || (line[6] != 0)) { return(STATUS_INVALID_STATEMENT); }
           switch (line[5]) {
