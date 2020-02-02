@@ -39,6 +39,7 @@ volatile unsigned long millis;
 unsigned long millis_timer;
 
 unsigned long z_step_timer;
+unsigned long arc_stablization_timer;
 volatile int z_step_delay;
 
 // Value to store analog result
@@ -52,28 +53,33 @@ void thc_update()
     //We don't have an arc_ok signal
     jog_z_up = false;
     jog_z_down = false;
+    arc_stablization_timer = millis;
   }
   else
   {
     //We have an arc_ok signal!
     //Out ADC input is 2:1 voltage divider so pre-divider is 0-10V and post divider is 0-5V. ADC resolution is 0-1024; Each ADC tick is 0.488 Volts pre-divider (AV+) at 1:50th scale!
     //or 0.009 volts at scaled scale (0-10)
-    if (analogSetVal > 30) //THC is turned on
+    //Wait 3 secends for arc voltage to stabalize
+    if ((millis - arc_stablization_timer) > 3000)
     {
-      if ((analogVal > (analogSetVal - 10)) && (analogVal < (analogSetVal + 10))) //We are within are ok range
+      if (analogSetVal > 30) //THC is turned on
       {
-        jog_z_up = false;
-        jog_z_down = false;
-      }
-      else //We are not in range and need to deterimine direction needed to put us in range
-      {
-        if (analogVal > analogSetVal) //Torch is too high
+        if ((analogVal > (analogSetVal - 10)) && (analogVal < (analogSetVal + 10))) //We are within are ok range
         {
-          jog_z_down = true;
+          jog_z_up = false;
+          jog_z_down = false;
         }
-        else //Torch is too low
+        else //We are not in range and need to deterimine direction needed to put us in range
         {
-          jog_z_up = true;
+          if (analogVal > analogSetVal) //Torch is too high
+          {
+            jog_z_down = true;
+          }
+          else //Torch is too low
+          {
+            jog_z_up = true;
+          }
         }
       }
     }
@@ -146,6 +152,7 @@ ISR(TIMER2_OVF_vect){
 
 int main(void)
 {
+  arc_stablization_timer = 0;
   /* Begin ADC Setup */
   // clear ADLAR in ADMUX (0x7C) to right-adjust the result
   // ADCL will contain lower 8 bits, ADCH upper 2 (in last two bits)
