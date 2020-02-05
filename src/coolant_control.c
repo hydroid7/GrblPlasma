@@ -81,7 +81,6 @@ void coolant_stop()
 void coolant_set_state(uint8_t mode)
 {
   if (sys.abort) { return; } // Block during abort.  
-  
 	if (mode & COOLANT_FLOOD_ENABLE) {
 		#ifdef INVERT_COOLANT_FLOOD_PIN
 			COOLANT_FLOOD_PORT &= ~(1 << COOLANT_FLOOD_BIT);

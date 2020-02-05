@@ -114,7 +114,9 @@ void report_status_message(uint8_t status_code)
 {
   switch(status_code) {
     case STATUS_OK: // STATUS_OK
-      printPgmString(PSTR(">")); break; //Instead of writing 4 charactors "ok\n\r", lets just write on and pick it off the line concatination string to lower the chances of the ok protocal breaking down mid cut
+      //printPgmString(PSTR("ok_to_send\n\r"));
+      serial_write('>');
+      break; //Instead of writing 4 charactors "ok\n\r", lets just write on and pick it off the line concatination string to lower the chances of the ok protocal breaking down mid cut
     default:
       printPgmString(PSTR("error:"));
       print_uint8_base10(status_code);
@@ -503,6 +505,8 @@ void report_realtime_status()
   printFloat_RateValue(st_get_realtime_rate());
   printPgmString(PSTR(", \"ADC\": "));
   print_uint32_base10((uint16_t)analogVal);
+  printPgmString(PSTR(", \"THC_OFFSET\": "));
+  printInteger(thc_offset);
   printPgmString(PSTR(", \"IN_MOTION\": "));
   if (machine_in_motion == true)
   {

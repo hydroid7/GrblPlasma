@@ -113,6 +113,45 @@ void spindle_stop()
       SPINDLE_ENABLE_PORT &= ~(1<<SPINDLE_ENABLE_BIT); // Set pin to low
     #endif
   #endif
+  /*if (thc_offset != 0)
+  {
+    jog_z_down = false;
+    jog_z_up = false;
+    printPgmString(PSTR("There is a THC offset that needs to be cleared!\n"));
+    if (thc_offset > 0) //We need a negative move
+    {
+      jog_z_down = true;
+      while(thc_offset > 0) //Wait until offset is cleared!
+      {
+        printPgmString(PSTR("THC_OFFSET(z-): "));
+        printInteger(thc_offset);
+        printPgmString(PSTR("\n\r"));
+      }
+      jog_z_down = false;
+    }
+    else //We need a possitive move
+    {
+      jog_z_up = true;
+      while(thc_offset < 0)
+      {
+        printPgmString(PSTR("THC_OFFSET(z+): "));
+        printInteger(thc_offset);
+        printPgmString(PSTR("\n\r"));
+      }
+      jog_z_up = false;
+    }
+    printPgmString(PSTR("Offset has been cleared!\n"));
+  }*/
+  jog_z_down = false;
+  jog_z_up = false;
+  //printPgmString(PSTR("Z position before subtracting thc offset: \n"));
+  //printInteger(sys_position[Z_AXIS]);
+  //printPgmString(PSTR("\n\r"));
+  sys_position[Z_AXIS] -= thc_offset;
+  //printPgmString(PSTR("Z position after subtracting thc offset: \n"));
+  //printInteger(sys_position[Z_AXIS]);
+  //printPgmString(PSTR("\n\r"));
+  
 }
 
 

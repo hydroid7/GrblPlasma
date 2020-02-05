@@ -46,6 +46,8 @@ volatile int z_step_delay;
 volatile uint16_t analogVal;
 volatile uint16_t analogSetVal;
 
+volatile long thc_offset; //The total number of steps +/- that the THC has offset
+
 void thc_update()
 {
   if(PINC & (1<<PC1))
@@ -65,7 +67,7 @@ void thc_update()
     {
       if (analogSetVal > 30) //THC is turned on
       {
-        if ((analogVal > (analogSetVal - 10)) && (analogVal < (analogSetVal + 10))) //We are within are ok range
+        if ((analogVal > (analogSetVal - 10)) && (analogVal < (analogSetVal + 10))) //We are within our ok range
         {
           jog_z_up = false;
           jog_z_down = false;
@@ -88,7 +90,7 @@ void thc_update()
 
 unsigned long cycle_frequency_from_feedrate(double feedrate)
 {
-  return ((1000.0f * 1000.0f) / (2540.0f)) / feedrate;
+  return ((1000.0f * 1000.0f) / (settings.steps_per_mm[Z_AXIS])) / feedrate;
 }
 ISR(ADC_vect){
   // Must read low first
@@ -116,6 +118,7 @@ ISR(TIMER2_OVF_vect){
       PORTD |= (1 << PD4);     // set pin A2 high
       _delay_us(10);
       PORTD &= ~(1 << PD4);    // set pin A2 low
+      thc_offset++;
     }
     else if (jog_z_down)
     {
@@ -132,6 +135,7 @@ ISR(TIMER2_OVF_vect){
       PORTD |= (1 << PD4);     // set pin A2 high
       _delay_us(10);
       PORTD &= ~(1 << PD4);    // set pin A2 low
+      thc_offset--;
     }
     z_step_timer = micros;
   }
@@ -139,7 +143,7 @@ ISR(TIMER2_OVF_vect){
   //Timing critical
   if (millis_timer > 7) //8 cycles is one millisecond
   {
-    thc_update(); //Once a millisecond, evaluate what the THC should be doing
+    if (machine_in_motion == true) thc_update(); //Once a millisecond, evaluate what the THC should be doing
     millis_timer = 0;
     millis++;
   }
