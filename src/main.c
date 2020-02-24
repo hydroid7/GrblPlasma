@@ -208,7 +208,7 @@ int main(void)
   millis_timer = 0;
 
   z_step_timer = 0;
-  z_step_delay = cycle_frequency_from_feedrate((12.0f / 60.0f));
+  z_step_delay = 0;
 
   
   DDRC &= ~(1<<DDC1); // Set A1 as input for Arc Ok
@@ -286,6 +286,7 @@ int main(void)
     // Start Grbl main loop. Processes program inputs and executes them.
     
     PORTB &= ~(1 << PB0); //Set torch pin off
+    cycle_frequency_from_feedrate((12.0f / 60.0f));
     protocol_main_loop();
 
   }
