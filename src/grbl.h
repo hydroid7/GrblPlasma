@@ -70,7 +70,6 @@ extern volatile unsigned long micros;
 extern volatile unsigned long millis;
 extern volatile uint16_t analogVal;
 extern volatile uint16_t analogSetVal;
-extern volatile long thc_offset;
 
 #define bit_get(p,m) ((p) & (m))
 #define bit_set(p,m) ((p) |= (m))

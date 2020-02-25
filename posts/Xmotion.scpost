@@ -37,9 +37,9 @@ end
 function OnRapid()
    if((endX * scale) < 1000) then
       post.Text ("G0 X")
-      post.Number (endX * scale, "0.0000")
+      post.Number (endX * scale, "0.###")
       post.Text (" Y")
-      post.Number (endY * scale, "0.0000")
+      post.Number (endY * scale, "0.###")
       post.Eol()
    else
 
@@ -49,12 +49,12 @@ end
 function OnMove()
 
    if((endX * scale) < 1000) then
-      post.Text ("G1 X")
-      post.Number (endX * scale, "0.0000")
-      post.Text (" Y")
-      post.Number (endY * scale, "0.0000")
-      post.Text (" F")
-      post.Number (feedRate * scale, "0.0000")
+      post.Text ("G1X")
+      post.Number (endX * scale, "0.###")
+      post.Text ("Y")
+      post.Number (endY * scale, "0.###")
+      post.Text ("F")
+      post.Number (feedRate * scale, "0.###")
       post.Eol()
    else
 
@@ -67,11 +67,11 @@ end
 
 function OnPenDown()
    post.Text ("fire_torch ")
-   post.Number (pierceHeight * scale, "0.0000")
+   post.Number (pierceHeight * scale, "0.###")
    post.Text (" ")
    post.Number (pierceDelay, "0.###")
    post.Text (" ")
-   post.Number (cutHeight * scale, "0.0000")
+   post.Number (cutHeight * scale, "0.###")
    post.Eol();
 end
 
