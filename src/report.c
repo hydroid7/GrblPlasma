@@ -505,8 +505,6 @@ void report_realtime_status()
   printFloat_RateValue(st_get_realtime_rate());
   printPgmString(PSTR(", \"ADC\": "));
   print_uint32_base10((uint16_t)analogVal);
-  printPgmString(PSTR(", \"THC_OFFSET\": "));
-  printInteger(thc_offset);
   printPgmString(PSTR(", \"IN_MOTION\": "));
   if (machine_in_motion == true)
   {

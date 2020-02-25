@@ -46,8 +46,6 @@ volatile int z_step_delay;
 volatile uint16_t analogVal;
 volatile uint16_t analogSetVal;
 
-volatile long thc_offset; //The total number of steps +/- that the THC has offset
-
 void thc_update()
 {
   if(PINC & (1<<PC1))
@@ -118,9 +116,7 @@ ISR(TIMER2_OVF_vect){
       PORTD |= (1 << PD4);     // set pin A2 high
       _delay_us(10);
       PORTD &= ~(1 << PD4);    // set pin A2 low
-      //thc_offset++;
       sys_position[Z_AXIS]++;
-      //plan_sync_position();
     }
     else if (jog_z_down)
     {
@@ -137,9 +133,7 @@ ISR(TIMER2_OVF_vect){
       PORTD |= (1 << PD4);     // set pin A2 high
       _delay_us(10);
       PORTD &= ~(1 << PD4);    // set pin A2 low
-      thc_offset--;
       sys_position[Z_AXIS]--;
-      //plan_sync_position();
     }
     z_step_timer = micros;
   }
