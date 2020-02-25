@@ -119,6 +119,8 @@ ISR(TIMER2_OVF_vect){
       _delay_us(10);
       PORTD &= ~(1 << PD4);    // set pin A2 low
       thc_offset++;
+      sys_position[Z_AXIS]++;
+      //plan_sync_position();
     }
     else if (jog_z_down)
     {
@@ -136,6 +138,8 @@ ISR(TIMER2_OVF_vect){
       _delay_us(10);
       PORTD &= ~(1 << PD4);    // set pin A2 low
       thc_offset--;
+      sys_position[Z_AXIS]--;
+      //plan_sync_position();
     }
     z_step_timer = micros;
   }
@@ -286,7 +290,7 @@ int main(void)
     // Start Grbl main loop. Processes program inputs and executes them.
     
     PORTB &= ~(1 << PB0); //Set torch pin off
-    cycle_frequency_from_feedrate((12.0f / 60.0f));
+    z_step_delay = cycle_frequency_from_feedrate((12.0f / 60.0f));
     protocol_main_loop();
 
   }
