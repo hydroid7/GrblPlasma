@@ -118,7 +118,7 @@ ISR(TIMER2_OVF_vect){
       PORTD |= (1 << PD4);     // set pin A2 high
       _delay_us(10);
       PORTD &= ~(1 << PD4);    // set pin A2 low
-      thc_offset++;
+      //thc_offset++;
       sys_position[Z_AXIS]++;
       //plan_sync_position();
     }

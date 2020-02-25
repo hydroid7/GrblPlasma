@@ -144,14 +144,7 @@ void spindle_stop()
   }*/
   jog_z_down = false;
   jog_z_up = false;
-  //printPgmString(PSTR("Z position before subtracting thc offset: \n"));
-  //printInteger(sys_position[Z_AXIS]);
-  //printPgmString(PSTR("\n\r"));
-  sys_position[Z_AXIS] -= thc_offset;
-  //printPgmString(PSTR("Z position after subtracting thc offset: \n"));
-  //printInteger(sys_position[Z_AXIS]);
-  //printPgmString(PSTR("\n\r"));
-  
+  plan_sync_position(); //Update planner for THC offset!
 }
 
 
