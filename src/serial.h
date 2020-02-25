@@ -30,7 +30,7 @@
   #ifdef USE_LINE_NUMBERS
     #define TX_BUFFER_SIZE 112
   #else
-    #define TX_BUFFER_SIZE 104
+    #define TX_BUFFER_SIZE 210
   #endif
 #endif
 
