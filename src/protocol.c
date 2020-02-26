@@ -125,9 +125,9 @@ void protocol_main_loop()
             //printPgmString(PSTR("\r\n"));
             if (checksum_value != rx_checksum)
             {
-              printPgmString(PSTR("Checksum_value: \""));
-              for (int a = 0; a < strlen(line); a++) serial_write(line[a]);
-              printPgmString(PSTR("\"\r\n"));
+              //printPgmString(PSTR("Checksum_value: \""));
+              //for (int a = 0; a < strlen(line); a++) serial_write(line[a]);
+              //printPgmString(PSTR("\"\r\n"));
               printPgmString(PSTR("[CHECKSUM_FAILURE]\r\n"));
               for (int j = 0; j < char_counter; j++) line[j] = 0; //Nullify 
               char_counter = 0;
