@@ -31,17 +31,18 @@ static char line[LINE_BUFFER_SIZE]; // Line to be executed. Zero-terminated.
 
 static void protocol_exec_rt_suspend();
 
-unsigned long arc_voltage_sample_timer;
-
-uint16_t ReadADC(uint8_t ADCchannel)
+/* CRC-32C (iSCSI) polynomial in reversed bit order. */
+#define POLY 0x82f63b78
+uint32_t crc32c(uint32_t crc, const char *buf, size_t len)
 {
- //select ADC channel with safety mask
- ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
- //single conversion mode
- ADCSRA |= (1<<ADSC);
- // wait until ADC conversion is complete
- while( ADCSRA & (1<<ADSC) );
- return ADC;
+  int k;
+  crc = ~crc;
+  while (len--) {
+      crc ^= *buf++;
+      for (k = 0; k < 8; k++)
+          crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+  }
+  return ~crc;
 }
 
 /*
@@ -81,13 +82,59 @@ void protocol_main_loop()
   // ---------------------------------------------------------------------------------
   uint8_t line_flags = 0;
   uint8_t char_counter = 0;
+  uint32_t checksum_value = 0;
+  char checksum[8];
+  uint8_t checksum_counter = 0;
   uint8_t c;
   for (;;) {
     // Process one line of incoming serial data, as the data becomes available. Performs an
     // initial filtering by removing spaces and comments and capitalizing all letters.
     while((c = serial_read()) != SERIAL_NO_DATA) {
       if ((c == '\n') || (c == '\r')) { // End of line reached
+        for (int x = 0; x < char_counter; x++)
+        {
+          if (line[x] == '*')
+          {
+            line[x] = 0; //Remove * from line
+            //Fill checksum with checksum and remove checksum from line
+            for (int z = x+1; z < char_counter; z++)
+            {
+              checksum[checksum_counter] = line[z];
+              checksum_counter++;
+              line[z] = 0;
+            }
+            checksum[checksum_counter] = 0;
+            //Convert checksum to int value
+            //printPgmString(PSTR("Checksum: "));
+            //printString(checksum);
+            //printPgmString(PSTR("\r\n"));
+            checksum_value = (uint32_t)atol(checksum);
+            //printPgmString(PSTR("Checksum_value: \""));
+            //print_uint32_base10(checksum_value);
+            //printPgmString(PSTR("\"\r\n"));
+            //Nulify checksum and reset counter
+            for (int y = 0; y < checksum_counter; y++)
+            {
+              checksum[y]=0;
+            }
+            checksum_counter = 0;
 
+            uint32_t rx_checksum = crc32c(0, line, strlen(line));
+            //printPgmString(PSTR("rx_checksum: "));
+            //print_uint32_base10(rx_checksum);
+            //printPgmString(PSTR("\r\n"));
+            if (checksum_value != rx_checksum)
+            {
+              printPgmString(PSTR("Checksum_value: \""));
+              for (int a = 0; a < strlen(line); a++) serial_write(line[a]);
+              printPgmString(PSTR("\"\r\n"));
+              printPgmString(PSTR("[CHECKSUM_FAILURE]\r\n"));
+              for (int j = 0; j < char_counter; j++) line[j] = 0; //Nullify 
+              char_counter = 0;
+            }
+            break;
+          }
+        }
         protocol_execute_realtime(); // Runtime command check point.
         if (sys.abort) { return; } // Bail to calling function upon system abort
 
