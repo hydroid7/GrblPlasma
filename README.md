@@ -1,5 +1,5 @@
 # XmotionFirmware
-CNC Motion Control Firmware for XmotionCNC Motion Control Boards. Focused on CNC Plasma Cutting
+CNC Motion Control Firmware for XmotionCNC Motion Control Boards or Arduino UNO DIY setup. Focused on CNC Plasma Cutting.
 
 # Forked from GRBL
 XmotionFirmware was forked from GRBL but the protocal has changed a lot and is not compatible with GRBL sender.
