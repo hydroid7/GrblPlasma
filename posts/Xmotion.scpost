@@ -6,6 +6,9 @@ function OnAbout(event)
    ctrl:AppendText("Comments enclosed with ( and )\n")
    ctrl:AppendText("Incremental IJ\n")
 end
+-- revision 11/23/20 
+-- Added drill option for piercing centers for holes to later be drill by hand or drill press...
+
 
 --  revision 7/8/2019
 --  Changed for Xmotion Gen3 Control
@@ -95,5 +98,18 @@ end
 
 
 function OnDrill()
-   
+   post.Text ("G0 X")
+   post.Number (endX * scale, "0.###")
+   post.Text (" Y")
+   post.Number (endY * scale, "0.###")
+   post.Eol()
+   post.Text ("fire_torch ")
+   post.Number (pierceHeight * scale, "0.###")
+   post.Text (" ")
+   post.Number (pierceDelay, "0.###")
+   post.Text (" ")
+   post.Number (cutHeight * scale, "0.###")
+   post.Eol();
+   post.Text ("torch_off")
+   post.Eol();
 end
