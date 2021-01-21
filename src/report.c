@@ -525,6 +525,19 @@ void report_realtime_status()
   }
   printPgmString(PSTR(" }"));
   report_util_line_feed();
+  if(PINC & (1<<PC5)) //We are crashing torch into work piece! Report it!
+  {
+    //Do nothing
+  }
+  else
+  {
+    if (machine_in_motion == true)
+    {
+      printPgmString(PSTR("[CRASH]"));
+      report_util_line_feed();
+    }
+  }
+  
 }
 void report_realtime_status_orig()
 {
