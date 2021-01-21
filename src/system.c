@@ -233,6 +233,7 @@ uint8_t system_execute_line(char *line)
             //printPgmString(PSTR("Voltage = "));
             //print_uint32_base10((uint16_t)analogSetVal);
             //printPgmString(PSTR("\r\n"));
+            printPgmString(PSTR(">"));
           }
         break;
         case 'R' : // Restore defaults [IDLE/ALARM]
