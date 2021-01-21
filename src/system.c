@@ -170,7 +170,10 @@ uint8_t system_execute_line(char *line)
       break;
     default :
       // Block any system command that requires the state as IDLE/ALARM. (i.e. EEPROM, homing)
-      if ( !(sys.state == STATE_IDLE || sys.state == STATE_ALARM) ) { return(STATUS_IDLE_ERROR); }
+      if (line[1] != 'T') //THC can and should be controlled during program run...
+      {
+        if ( !(sys.state == STATE_IDLE || sys.state == STATE_ALARM) ) { return(STATUS_IDLE_ERROR); }
+      }
       switch( line[1] ) {
         case '#' : // Print Grbl NGC parameters
           if ( line[2] != 0 ) { return(STATUS_INVALID_STATEMENT); }
