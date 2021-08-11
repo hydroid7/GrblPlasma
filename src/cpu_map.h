@@ -228,7 +228,7 @@
       #define DUAL_DIRECTION_BIT  5  // Uno Digital Pin 13
       #define DIRECTION_MASK_DUAL ((1<<DUAL_DIRECTION_BIT))
 
-      // NOTE: Dual axis limit is shared with the z-axis limit pin by default.
+      // NOTE: Dual axis limit is shared with the z-axis limit pin by default.`
       #define DUAL_LIMIT_BIT    Z_LIMIT_BIT
       #define LIMIT_MASK        ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)|(1<<Z_LIMIT_BIT)|(1<<DUAL_LIMIT_BIT))
 
