@@ -6,7 +6,7 @@ XmotionFirmware was forked from GRBL but the protocal has changed a lot and is n
 
 # Features
 - All original GRBL features left intact
-- Setup for Dual Y (Most plasma machines are dual Y gantry's)
+- Setup for Dual X (Most plasma machines are dual Y gantry's)
 - Cyclic redundancy check on Gcode stream to controller. This is absolutly critical for noisy environments, like plasma cutting. Without this
 a dropped byte or framming issue during the gcode stream can cause your machine to go places it's not supposed to!
 - Built in Arc Voltage Torch Height Control. Uses A0 to read arc voltage from the plasma cutter and makes adjustments on a 1ms intervol.
